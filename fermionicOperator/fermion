@@ -1,0 +1,20 @@
+class fermion:
+    def __init__(self, fermion):
+        self.fermion = fermion
+        self.type = self.determine_type()
+        return
+    
+    def determine_type(self):
+        if '^' in self.fermion:
+            return 'creation'
+        else:
+            return 'annihilation'
+
+    # def Commute(self, other):
+    #     if (self.name)
+
+    #     return 
+
+a = fermion('a^')
+print(type(a))
+
