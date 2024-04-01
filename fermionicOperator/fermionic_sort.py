@@ -1,20 +1,16 @@
 from copy import deepcopy
+from fermion import Fermion
 
-class Fermionic_operator():
+class Fermionic_operator:
     def __init__(self):
-        print("[Fermionic Operator Sorting]\n")
-        print("This script will sort the fermionic operators in the Hamiltonian")
-        print("in the order of the qubit operators.\n")
-
-        print("Rule: [value] [operator] [operator] ...\n(^ is indicates the dagger operator)")
         self.operator = input("Input: ")
         self.operator = self.split_operator(self.operator)
-        print('Recall:', self.print_operator(self.operator))
         self.operator = self.number_sort(self.operator)
         self.operator = self.dirac_sort(self.operator)
+        self.operator = self.number_sort(self.operator)
         self.operator = self.length_sort(self.operator)
         self.operator = self.compute_operator(self.operator)
-        print("Result:", self.print_operator(self.operator))
+        print(self.print_operator(self.operator))
 
     def split_operator(self, operator):
         operator = operator.split()
@@ -45,36 +41,29 @@ class Fermionic_operator():
     
     def number_sort(self, operator):
         def _number_sort(operator):
+            fermion = [Fermion(fermion) for fermion in operator]
             for i in range(1, len(operator)-1):
-                if ('^' in operator[i]) and ('^' in operator[i+1]):
-                    if operator[i][:-1] > operator[i+1][:-1]:
-                        operator[i], operator[i+1] = operator[i+1], operator[i]
-                        operator.insert(0, '-')
-                        return True, operator
-                elif ('^' not in operator[i]) and ('^' not in operator[i+1]):
-                    if operator[i] < operator[i+1]:
-                        operator[i], operator[i+1] = operator[i+1], operator[i]
-                        operator.insert(0, '-')
-                        return True, operator
+                if (fermion[i].type == fermion[i+1].type) and (fermion[i].num > fermion[i+1].num):
+                    operator[i], operator[i+1] = operator[i+1], operator[i]
+                    operator.insert(0, '-')
+                    return True, operator
             return False, operator 
         
         for i in range(len(operator)):
             if (operator[i] == '-') or (operator[i] == '+'):
                 continue
             c, _operator = _number_sort(operator[i])
-            if c:
-                if _operator[0] == '-':
-                    del _operator[0]
-                    operator[i] = _operator
-                    if operator[i-1] == '-':
-                        operator.insert(i, '+')
-                        del operator[i-1]
-                    elif operator[i-1] == '+':
-                        operator.insert(i, '-')
-                        del operator[i-1]
-                    else:
-                        operator.insert(i, '-')
-
+            if c and (_operator[0] == '-'):
+                del _operator[0]
+                operator[i] = _operator
+                if operator[i-1] == '-':
+                    operator.insert(i, '+')
+                    del operator[i-1]
+                elif operator[i-1] == '+':
+                    operator.insert(i, '-')
+                    del operator[i-1]
+                else:
+                    operator.insert(i, '-')
                 return self.number_sort(operator)
         return operator
     
@@ -82,8 +71,9 @@ class Fermionic_operator():
         def _dirac_sort(operator, sign):
             _operator = []
             __operator = deepcopy(operator)
+            fermion = [Fermion(fermion) for fermion in operator]
             for i in range(1, len(operator)-1):
-                if ('^' not in operator[i]) and ('^' in operator[i+1]) and (operator[i] != '-'):
+                if (fermion[i].type == 'annihilation') and (fermion[i+1].type == 'creation'):
                     if operator[i] == operator[i+1][:-1]:
                         operator[i], operator[i+1] = operator[i+1], operator[i]
                         del __operator[i]; del __operator[i]
