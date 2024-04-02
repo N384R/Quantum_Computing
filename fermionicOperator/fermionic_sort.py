@@ -113,17 +113,10 @@ class Fermionic_operator:
                 if (operator[i] == '-') or (operator[i] == '+'):
                     continue
                 if (operator[i][1:] == operator[i+2][1:]):
-                    if operator[i-1] == '-':
-                        coeff1 = - float(operator[i][0])
-                    else:
-                        coeff1 = float(operator[i][0])
-                    if operator[i+1] == '-':
-                        coeff2 = - float(operator[i+2][0])
-                    else:
-                        coeff2 = float(operator[i+2][0])
-                    coeff = coeff1 + coeff2
-                    operator[i][0] = coeff
-                    del operator[i+1]; del operator[i+1]
+                    coeff1 = -float(operator[i][0]) if operator[i-1] == '-' else float(operator[i][0])
+                    coeff2 = -float(operator[i+2][0]) if operator[i+1] == '-' else float(operator[i+2][0])
+                    operator[i][0] = coeff1 + coeff2
+                    del operator[i+2]
             except:
                 break
         return operator
