@@ -10,4 +10,19 @@ driver = PySCFDriver(
 )
 
 problem = driver.run()
-print(problem)
+
+hamiltonian = problem.hamiltonian
+coefficients = hamiltonian.electronic_integrals
+print(coefficients.alpha)
+
+second_q_op = hamiltonian.second_q_op()
+print(second_q_op)
+
+print("nuclear_repulsion_energy", hamiltonian.nuclear_repulsion_energy)n
+
+print("reference_energy", problem.reference_energy)
+
+print("num_particles:", problem.num_particles)
+
+print("spatial_orbitals:", problem.num_spatial_orbitals)
+
