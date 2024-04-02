@@ -1,5 +1,6 @@
 from copy import deepcopy
 from fermion import Fermion
+import re
 
 class Fermionic_operator:
     def __init__(self, operator=None):
@@ -19,28 +20,25 @@ class Fermionic_operator:
                 print("Error: Invalid Operator")
                 exit()
 
-        _operator = []
-        __operator = []
-
         for i in range(len(operator)):
-            if operator[i] == '-':
-                __operator.append(_operator)
-                __operator.append('-')
-                _operator = []
-                continue
-            elif operator[i] == '+':
-                __operator.append(_operator)
-                __operator.append('+')
+            if any(sign in operator[i] for sign in ('-', '+')) and len(operator[i]) > 1:
+                sign, operator[i] = operator[i][0], operator[i][1:]
+                operator.insert(i, sign)
+
+        _operator = []
+        result = []
+        for i in range(len(operator)):
+            if operator[i] in ('-', '+'):
+                result.append(_operator)
+                result.append(operator[i])
                 _operator = []
                 continue
             _operator.append(operator[i])
-        __operator.append(_operator)
+        result.append(_operator)
 
-        if '-' in __operator[0][0]:
-            __operator[0][0] = __operator[0][0][1:]
-            __operator.insert(0, '-')
-        return __operator
+        return result
     
+
     def number_sort(self, operator):
         def _number_sort(operator):
             fermion = [Fermion(fermion) for fermion in operator]
@@ -70,7 +68,7 @@ class Fermionic_operator:
                     if operator[i] == operator[i+1][:-1]:
                         operator[i], operator[i+1] = operator[i+1], operator[i]
                         del _operator[i:i+2]
-                        return True, True, [_operator] + ['-' if sign == '+' else '+'] + [operator]
+                        return True, True, [_operator] + ['+' if sign == '-' else '-'] + [operator]
                     else:
                         operator[i], operator[i+1] = operator[i+1], operator[i]
                         operator.insert(0, '-') if operator[0] != '-' else operator.pop(0)
@@ -92,8 +90,8 @@ class Fermionic_operator:
                 operator[i] = _operator
                 if operator[i][0] == '-':
                     del operator[i][0]
-                    if operator[i-1] in ['-', '+']:
-                        operator[i-1] = '-' if operator[i-1] == '+' else '+'
+                    if operator[i-1] in ('-', '+'):
+                        operator[i-1] = '+' if operator[i-1] == '-' else '-'
                     else:
                         operator.insert(i, '-')
                 return self.dirac_sort(operator)
@@ -102,25 +100,37 @@ class Fermionic_operator:
     def length_sort(self, operator):  
         length = [[i, len(operator[i])] for i in range(len(operator)) if operator[i] not in ('-', '+')]
         _length = deepcopy(length)
+        _operator = deepcopy(operator)
         _length.sort(key=lambda x: x[1])
         for i in range(len(length)):
-            operator[length[i][0]], operator[length[i][0]-1] = operator[_length[i][0]], operator[_length[i][0]-1]
+            operator[length[i][0]], operator[length[i][0]-1] = _operator[_length[i][0]], _operator[_length[i][0]-1]
         return operator
 
     def compute_operator(self, operator):
-        for i in range(len(operator)-2):
-            try:
-                if (operator[i] == '-') or (operator[i] == '+'):
-                    continue
-                if (operator[i][1:] == operator[i+2][1:]):
-                    coeff1 = -float(operator[i][0]) if operator[i-1] == '-' else float(operator[i][0])
-                    coeff2 = -float(operator[i+2][0]) if operator[i+1] == '-' else float(operator[i+2][0])
-                    operator[i][0] = coeff1 + coeff2
-                    del operator[i+2]
-            except:
-                break
-        return operator
+        _terms = {}
+        _operator = []
+        sign = '+'
 
+        for item in operator:
+            if isinstance(item, list):
+                coeff, *terms = item
+                terms_tuple = tuple(terms)
+                coeff = float(coeff) if sign == '+' else -float(coeff)
+
+                if terms_tuple in _terms:
+                    _terms[terms_tuple] += coeff
+                else:
+                    _terms[terms_tuple] = coeff
+            else:
+                sign = item
+
+        for terms, coeff in _terms.items():
+            if coeff != 0:
+                _operator.append('+' if coeff > 0 else '-')
+                _operator.append(['%.3f' %abs(coeff)] + list(terms))
+  
+        return _operator
+    
     def print_operator(self, operator):
         sub = str.maketrans("0123456789^", "₀₁₂₃₄₅₆₇₈₉†")
         
