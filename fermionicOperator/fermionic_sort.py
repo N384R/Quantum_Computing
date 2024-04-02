@@ -103,9 +103,8 @@ class Fermionic_operator:
         length = [[i, len(operator[i])] for i in range(len(operator)) if operator[i] not in ('-', '+')]
         _length = deepcopy(length)
         _length.sort(key=lambda x: x[1])
-        _operator = deepcopy(operator)
         for i in range(len(length)):
-            operator[length[i][0]], operator[length[i][0]-1] = _operator[_length[i][0]], operator[_length[i][0]-1]
+            operator[length[i][0]], operator[length[i][0]-1] = operator[_length[i][0]], operator[_length[i][0]-1]
         return operator
 
     def compute_operator(self, operator):
