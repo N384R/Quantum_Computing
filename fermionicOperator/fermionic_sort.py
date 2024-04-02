@@ -126,7 +126,7 @@ class Fermionic_operator:
         
         line = ''
         for i in range(len(operator)):
-            if (operator[i] == '-') or (operator[i] == '+'):
+            if operator[i] in ('-', '+'):
                 line += ' ' + operator[i]
                 continue
 
