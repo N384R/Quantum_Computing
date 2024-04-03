@@ -1,30 +1,33 @@
-def combine_terms_with_coeffs(operator_list):
-    terms_dict = {}  # terms를 키로, 계수의 합을 값으로 저장할 딕셔너리
-    result = []
+import random
 
-    for item in operator_list:
-        if isinstance(item, list):  # 리스트 항목 처리
-            coeff, *terms = item
-            terms_tuple = tuple(terms)  # 리스트는 딕셔너리의 키가 될 수 없으므로 튜플로 변환
+def generate_block():
+    # 상수는 -999.999에서 999.999 범위 내에서 랜덤하게 생성
+    constant = round(random.uniform(-999.999, 999.999), 3)
+    
+    # 연산자 수는 1에서 10 사이로 랜덤하게 결정
+    operators_count = random.randint(1, 10)
+    
+    # 연산자 생성: 0부터 9 사이의 숫자를 연산자로 하며, 각 연산자는 소멸 연산자 또는 생성 연산자일 수 있음
+    operators = [f"{random.randint(0, 9)}^" if random.random() < 0.5 else str(random.randint(0, 9)) for _ in range(operators_count)]
+    
+    # 블럭을 문자열로 조합
+    block = f"{constant} " + " ".join(operators)
+    
+    return block
 
-            # 동일한 terms에 대한 계수 합산
-            if terms_tuple in terms_dict:
-                terms_dict[terms_tuple] += coeff
-            else:
-                terms_dict[terms_tuple] = coeff
-        else:  # 부호 항목 처리
-            result.append(item)  # 부호는 결과 리스트에 직접 추가
+# 100개의 블럭을 생성하고 라인으로 조합
+blocks = [generate_block() for _ in range(100)]
 
-    # 딕셔너리를 사용하여 최종 결과 리스트 구성
-    for terms, coeff in terms_dict.items():
-        if coeff != 0:  # 계수가 0이 아닌 항목만 결과에 추가
-            result.append([coeff] + list(terms))
+# 첫 번째 블록 다음부터는 부호로 시작하도록 조정
+line = blocks[0] + " " + " - ".join(blocks[1:])
 
-    return result
+line[:500]  # 결과 확인을 위해 처음 500자만 출력
 
-# 예제 입력
-operator_list = ['+', [3, 'a', 'b'], '-', [2, 'c'], '+', [1, 'a', 'b'], '+', [4, 'd'], '-', [1, 'a', 'b']]
+def replace_double_negatives(line):
+    return line.replace("- -", "+ ")
 
-# 함수 호출 및 결과 출력
-combined_terms = combine_terms_with_coeffs(operator_list)
-print(combined_terms)
+# 치환 함수 적용
+corrected_line = replace_double_negatives(line)
+
+# 결과의 일부 출력
+print(corrected_line)

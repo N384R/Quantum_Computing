@@ -19,14 +19,14 @@ class Fermionic_operator:
         if not operator:
                 print("Error: Invalid Operator")
                 exit()
-
+        
         for i in range(len(operator)):
             if any(sign in operator[i] for sign in ('-', '+')) and len(operator[i]) > 1:
                 sign, operator[i] = operator[i][0], operator[i][1:]
                 operator.insert(i, sign)
 
-        _operator = []
         result = []
+        _operator = []
         for i in range(len(operator)):
             if operator[i] in ('-', '+'):
                 result.append(_operator)
@@ -50,12 +50,16 @@ class Fermionic_operator:
             return False, operator 
         
         for i in range(len(operator)):
-            if (operator[i] == '-') or (operator[i] == '+'): continue
+            if operator[i] in ('-', '+'): 
+                continue
             c, _operator = _number_sort(operator[i])
             if c and (_operator[0] == '-'):
                 del _operator[0]
                 operator[i] = _operator
-                operator[i-1] = '+' if operator[i-1] == '-' else '-'
+                if operator[i-1] in ('-', '+'):
+                    operator[i-1] = '+' if operator[i-1] == '-' else '-'
+                else:
+                    operator.insert(i, '-')
                 return self.number_sort(operator)
         return operator
     
@@ -116,7 +120,6 @@ class Fermionic_operator:
                 coeff, *terms = item
                 terms_tuple = tuple(terms)
                 coeff = float(coeff) if sign == '+' else -float(coeff)
-
                 if terms_tuple in _terms:
                     _terms[terms_tuple] += coeff
                 else:
