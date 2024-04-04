@@ -1,9 +1,9 @@
 from copy import deepcopy
 from fermion import Fermion
-import re
 
-class Fermionic_operator:
+class FermionicSort:
     def __init__(self, operator=None):
+        self.operator = operator
         if operator is None:
             self.operator = input("Input: ")
         split_operator = self.split_operator(self.operator)
@@ -25,11 +25,12 @@ class Fermionic_operator:
                 sign, operator[i] = operator[i][0], operator[i][1:]
                 operator.insert(i, sign)
 
-        result = []
+        result = [] 
         _operator = []
         for i in range(len(operator)):
-            if operator[i] in ('-', '+'):
-                result.append(_operator)
+            if (operator[i] in ('-', '+')):
+                if i != 0:
+                    result.append(_operator)
                 result.append(operator[i])
                 _operator = []
                 continue
@@ -130,7 +131,7 @@ class Fermionic_operator:
         for terms, coeff in _terms.items():
             if coeff != 0:
                 _operator.append('+' if coeff > 0 else '-')
-                _operator.append(['%.3f' %abs(coeff)] + list(terms))
+                _operator.append(['%.2f' %abs(coeff)] + list(terms))
   
         return _operator
     
@@ -150,10 +151,13 @@ class Fermionic_operator:
                 line += " a" + notation
 
         return line[1:]
+    
+    def __repr__(self):
+        return f'{self.print_operator(self.operator)}'
         
 
 if __name__ == "__main__":
-    fo = Fermionic_operator()
-    print('Output:', fo.print_operator(fo.operator))
+    fo = FermionicSort()
+    print('Output:', fo)
 
     
