@@ -1,40 +1,62 @@
 from fermion import Fermion
 from pauli_operator import PauliOperator
-from pauli_operator import PauliSort
+from pauli_string import PauliString, PauliStrings
 from fermionic_sort import FermionicSort
 
 class JordanWigner:
-    def __init__(self, operator=None):
-        self.operator = operator
-        if operator is None:
-            self.operator = input("Input: ")
-        
-        self.fermioperator = FermionicSort(self.operator)
+    def __init__(self, fermionstring=None):
+        self.fermionstring = [Fermion(fermion) for fermion in fermionstring]
+        self.paulistrings = self.PauliConvert(self.fermionstring)
 
-    def PauliConvert(self, operator, maximum):
-        fermion = Fermion(operator)
-        pauli_string1 = {}
-        pauli_string2 = {}
-        z_string = {}
-        i_string = {}
-        for i in range(fermion.num):
+    def jordan_wigner(self, fermionstrings):
+        result = []
+        for fermionstring in fermionstrings:
+            
+
+    def _PauliConvert(self, fermion, maximum):
+        paulistring1 = PauliString()
+        paulistring2 = PauliString()
+        z_string = PauliString()
+        i_string = PauliString()
+
+        num = abs(fermion.num)
+        for i in range(num):
             z_string[i] = PauliOperator('Z')
         
-        pauli_string1[fermion.num] = PauliOperator('X')
-        pauli_string2[fermion.num] = PauliOperator('-iY') if fermion.type == 'creation' else PauliOperator('iY')
-
-        if fermion.num < maximum:
-            for i in range(fermion.num+1, maximum+1):
+        if num < maximum:
+            for i in range(num+1, maximum+1):
                 i_string[i] = PauliOperator('I')
-        
-        pauli_string1.update(z_string); pauli_string1.update(i_string)
-        pauli_string2.update(z_string); pauli_string2.update(i_string)
-        pauli_string1 = PauliSort(pauli_string1)
-        pauli_string2 = PauliSort(pauli_string2)
 
-        return pauli_string1, pauli_string2
+        for key, value in z_string.items():
+            paulistring1[key] = value
+            paulistring2[key] = value
         
+        paulistring1[num] = PauliOperator('X')
+        paulistring2[num] = PauliOperator('-iY') if fermion.type == 'creation' else PauliOperator('iY')
+
+        for key, value in i_string.items():
+            paulistring1[key] = value
+            paulistring2[key] = value
+
+        return PauliStrings(paulistring1, paulistring2)
+
+    def PauliConvert(self, fermionstring):
+        maximum = max(fermion.num for fermion in fermionstring)
+        result = None
+        for fermion in fermionstring:
+            pauli = self._PauliConvert(fermion, maximum)
+            print(pauli)
+            if result is None:
+                result = pauli
+            else:
+                result *= pauli
+        return result
+    
+    def __repr__(self):
+        return f'{self.paulistrings}'
+
 
 if __name__ == '__main__':
-    JW = JordanWigner("-1.00 1^ 2^ 3 4")
-    print(JW.PauliConvert('1^', 3))
+
+    jw = JordanWigner(['1^', '1'])
+    print(jw)

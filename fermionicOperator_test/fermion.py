@@ -12,20 +12,20 @@ class Fermion:
             if self.type == 'creation':
                 return int(self.fermion.replace('^', ''))
             elif self.type == 'annihilation':
-                return int('-' + self.fermion)
+                return int(self.fermion)
         except:
             self.type == 'others'
             return self.fermion
     
     def __repr__(self):
-        return self.fermion
+        sub = str.maketrans("0123456789^", "₀₁₂₃₄₅₆₇₈₉†")
+        notation = self.fermion.translate(sub)
+        line = "a" + notation
+        return line
     
     @staticmethod
     def sort_fermions(fermions):
-        sorted_fermions = sorted(fermions, key=lambda x: (
-            x.type != 'creation',
-            int(x.num) if x.type == 'creation' else -int(x.num), 
-        ))
+        sorted_fermions = sorted(fermions, key=lambda x: (x.type != 'creation', int(x.num)))
         return sorted_fermions
 
 if __name__ == "__main__":

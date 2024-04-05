@@ -44,10 +44,15 @@ class FermionicSort:
         def _number_sort(operator):
             fermion = [Fermion(fermion) for fermion in operator]
             for i in range(1, len(operator)-1):
-                if (fermion[i].type == fermion[i+1].type) and (fermion[i].num > fermion[i+1].num):
-                    operator[i], operator[i+1] = operator[i+1], operator[i]
-                    operator.insert(0, '-')
-                    return True, operator
+                if fermion[i].type == fermion[i+1].type:
+                    if fermion[i].type == 'creation' and fermion[i].num > fermion[i+1].num:
+                        operator[i], operator[i+1] = operator[i+1], operator[i]
+                        operator.insert(0, '-')
+                        return True, operator
+                    elif fermion[i].type == 'annihilation' and fermion[i+1].num > fermion[i].num:
+                        operator[i], operator[i+1] = operator[i+1], operator[i]
+                        operator.insert(0, '-')
+                        return True, operator
             return False, operator 
         
         for i in range(len(operator)):
@@ -149,7 +154,6 @@ class FermionicSort:
             for j in range(1, len(_operator)):
                 notation = _operator[j].translate(sub)
                 line += " a" + notation
-
         return line[1:]
     
     def __repr__(self):
@@ -157,7 +161,7 @@ class FermionicSort:
         
 
 if __name__ == "__main__":
-    fo = FermionicSort()
+    fo = FermionicSort('2.54 3^ 0^ 1 2')
     print('Output:', fo)
 
     

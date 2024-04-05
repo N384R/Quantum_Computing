@@ -78,17 +78,7 @@ class PauliOperator:
     def __repr__(self):
         return f'{self.symbol}'
     
-class PauliSort():
-    def __init__(self, paulistring):
-        self.paulistring = self.paulisort(paulistring)
-    
-    def paulisort(self, paulistring):
-        sorted_string = sorted(paulistring.items(), key=lambda x: x[0])
-        return dict(sorted_string)
-    
-    def __repr__(self):
-        return ''.join([f'{val}' for val in self.paulistring.values()])
-    
+
 if __name__ == "__main__":
     X = PauliOperator('X')
     Y = PauliOperator('Y')
@@ -97,7 +87,3 @@ if __name__ == "__main__":
 
     test = iZ * Z
     print(test)
-
-    # string = {'0': X, '2': X, '1': Z}
-    # string = PauliSort(string)
-    # print(string)
