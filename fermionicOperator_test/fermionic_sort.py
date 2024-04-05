@@ -14,6 +14,9 @@ class FermionicSort:
         compute_operator = self.compute_operator(length_sort)
         self.operator = compute_operator
 
+    def __iter__(self):
+        return iter(self.operator)
+
     def split_operator(self, operator):
         operator = operator.split()
         if not operator:
@@ -162,6 +165,6 @@ class FermionicSort:
 
 if __name__ == "__main__":
     fo = FermionicSort('2.54 3^ 0^ 1 2')
-    print('Output:', fo)
+    print('Output:', fo.operator)
 
     
