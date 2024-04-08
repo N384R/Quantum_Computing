@@ -23,15 +23,15 @@ class FermionicSort:
                 print("Error: Invalid Operator")
                 exit()
         
-        for i in range(len(operator)):
-            if any(sign in operator[i] for sign in ('-', '+')) and len(operator[i]) > 1:
+        for i, op in enumerate(operator)):
+            if any(sign in op for sign in ('-', '+')) and len(op) > 1:
                 sign, operator[i] = operator[i][0], operator[i][1:]
                 operator.insert(i, sign)
 
         result = [] 
         _operator = []
-        for i in range(len(operator)):
-            if (operator[i] in ('-', '+')):
+        for i, op in enumerate(operator)):
+            if (op in ('-', '+')):
                 if i != 0:
                     result.append(_operator)
                 result.append(operator[i])
