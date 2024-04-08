@@ -1,4 +1,4 @@
-from pauli_operator import PauliOperator
+from .pauli_operator import PauliOperator
 
 class PauliString:
     def __init__(self, pauli=None):

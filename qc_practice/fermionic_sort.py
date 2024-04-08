@@ -1,5 +1,5 @@
 from copy import deepcopy
-from fermion import Fermion
+from .fermion import Fermion
 
 class FermionicSort:
     def __init__(self, operator=None):

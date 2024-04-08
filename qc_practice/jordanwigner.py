@@ -1,7 +1,6 @@
-from fermion import Fermion
-from pauli_operator import PauliOperator
-from pauli_string import PauliString, PauliStrings
-from fermionic_sort import FermionicSort
+from .fermion import Fermion
+from .pauli_operator import PauliOperator
+from .pauli_string import PauliString, PauliStrings
 
 class _JordanWigner:
     def __init__(self, fermionstring, maximum):
