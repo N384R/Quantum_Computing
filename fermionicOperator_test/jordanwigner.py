@@ -66,30 +66,21 @@ class JordanWigner():
         return iter(self.pauli_strings)
 
     def call_jordan_wigner(self, fermionstrings):
-        # result = ()
-        # for fermionstring in fermionstrings:
-        #     if fermionstring in ('-', '+'):
-        #         sign = fermionstring
-        #         continue
-            
-        #     coeff = float(fermionstring[0])/(2**(self.maximum+1))
-        #     pauli = _JordanWigner(fermionstring[1:], self.maximum)
-        #     for p in pauli:
-        #         p[0] *= PauliOperator('-I') if sign == '-' else PauliOperator('I')
-        #         result += ((coeff, p),)
-
         result = {}
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
                 sign = fermionstring
                 continue
             
-            coeff = float(fermionstring[0])/(2**(self.maximum+1))
+            coeff = float(fermionstring[0])/(2**(len(fermionstring[1:])))
+            coeff = -coeff if sign == '-' else coeff
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
             for p in pauli:
-                p[0] *= PauliOperator('-I') if sign == '-' else PauliOperator('I')
-                result[p] = coeff
-
+                c, p = self.pauli_arrange(p)
+                if p in result:
+                    result[p] += c * coeff
+                else:
+                    result[p] = c * coeff
         return result
     
     def max_num(self, fermionstrings):
@@ -101,32 +92,39 @@ class JordanWigner():
             maximum = num if num > maximum else maximum
         return maximum
 
-    def pauli_compute(self, pauli):
-        result = {}
-        for key in pauli:
-            symbol = ''.join(f'{val}' for val in key.values())
+    def pauli_arrange(self, pauli):
+        coeff = 1
+        for key, val in pauli.items():
+            symbol = val.symbol
             count_m, count_i = symbol.count('-'), symbol.count('i')
-            minus = -1 if count_m == 1 else 1
-            val = (-1)
-            if key in result:
-                result[key] += 
-            else:
-                result[key] = 
-        return result
+            if count_m == 1:
+                coeff *= -1
+                pauli[key] *= PauliOperator('-I')
+            if count_i == 1:
+                coeff *= 1j
+                pauli[key] *= PauliOperator('-iI')
+        pauli.symbol = pauli.get_symbol(pauli)
+        return coeff, pauli
 
     def __repr__(self):
         line = ''
-        for key in self.pauli_strings.keys():
+        sorted_pauli = dict(sorted(self.pauli_strings.items(), key=lambda x: str(x)))
+        for key, values in sorted_pauli.items():
             symbol = ''.join(f'{val}' for val in key.values())
-            count_m, count_i = symbol.count('-'), symbol.count('i')
-            line += '-' if count_m == 1 else '+'
-            line += f' ({self.pauli_strings[key]})'
-            line += 'i' if count_i == 1 else ''
-            line += ' ' + symbol.replace('-', '').replace('i', '') + ' '
-        
+            if values.real > 0 or values.imag > 0:
+                line += '+ '
+            else:
+                line += '- '
+            if values.real != 0 and values.imag != 0:
+                line += f'{values}'
+            elif values.real == 0 and values.imag != 0:
+                line += f'({abs(values.imag):.5f})i'
+            else:
+                line += f'({abs(values.real):.5f})'
+            line += ' ' + symbol + ' '
         return line
 
 
 if __name__ == '__main__':
-    jw = JordanWigner(['-', ['2.54', '1^', '3^', '2', '0']])
+    jw = JordanWigner(['-', ['4.00', '1^']])
     print(jw)
