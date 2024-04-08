@@ -20,18 +20,18 @@ class FermionicSort:
     def split_operator(self, operator):
         operator = operator.split()
         if not operator:
-                print("Error: Invalid Operator")
-                exit()
-        
-        for i, op in enumerate(operator)):
+            print("Error: Invalid Operator")
+            exit()
+
+        for i, op in enumerate(operator):
             if any(sign in op for sign in ('-', '+')) and len(op) > 1:
                 sign, operator[i] = operator[i][0], operator[i][1:]
                 operator.insert(i, sign)
 
         result = [] 
         _operator = []
-        for i, op in enumerate(operator)):
-            if (op in ('-', '+')):
+        for i, op in enumerate(operator):
+            if op in ('-', '+'):
                 if i != 0:
                     result.append(_operator)
                 result.append(operator[i])
@@ -41,7 +41,6 @@ class FermionicSort:
         result.append(_operator)
 
         return result
-    
 
     def number_sort(self, operator):
         def _number_sort(operator):
@@ -56,10 +55,10 @@ class FermionicSort:
                         operator[i], operator[i+1] = operator[i+1], operator[i]
                         operator.insert(0, '-')
                         return True, operator
-            return False, operator 
-        
-        for i in range(len(operator)):
-            if operator[i] in ('-', '+'): 
+            return False, operator
+
+        for i, op in enumerate(operator):
+            if op in ('-', '+'):
                 continue
             c, _operator = _number_sort(operator[i])
             if c and (_operator[0] == '-'):
@@ -71,7 +70,7 @@ class FermionicSort:
                     operator.insert(i, '-')
                 return self.number_sort(operator)
         return operator
-    
+
     def dirac_sort(self, operator):
         def _dirac_sort(operator, sign):
             _operator = deepcopy(operator)
@@ -84,39 +83,44 @@ class FermionicSort:
                         return True, True, [_operator] + ['+' if sign == '-' else '-'] + [operator]
                     else:
                         operator[i], operator[i+1] = operator[i+1], operator[i]
-                        operator.insert(0, '-') if operator[0] != '-' else operator.pop(0)
+                        if operator[0] != '-':
+                            operator.insert(0, '-')
+                        else:
+                            operator.pop(0)
                         return True, False, operator
             return False, False, operator
 
-        for i in range(len(operator)):
-            if operator[i] in ('-', '+') or len(operator[i]) == 1: 
+        for i, op in enumerate(operator):
+            if op in ('-', '+') or not op:
                 continue
 
             a, b, _operator = _dirac_sort(operator[i], operator[i-1])
-            if not a: 
+            if not a:
                 continue
-            
             if b:
                 operator[i:i+1] = _operator
                 return self.dirac_sort(operator)
-            else:
-                operator[i] = _operator
-                if operator[i][0] == '-':
-                    del operator[i][0]
-                    if operator[i-1] in ('-', '+'):
-                        operator[i-1] = '+' if operator[i-1] == '-' else '-'
-                    else:
-                        operator.insert(i, '-')
-                return self.dirac_sort(operator)
+            operator[i] = _operator
+            if operator[i][0] == '-':
+                del operator[i][0]
+                if operator[i-1] in ('-', '+'):
+                    operator[i-1] = '+' if operator[i-1] == '-' else '-'
+                else:
+                    operator.insert(i, '-')
+            return self.dirac_sort(operator)
         return operator
 
     def length_sort(self, operator):  
-        length = [[i, len(operator[i])] for i in range(len(operator)) if operator[i] not in ('-', '+')]
-        _length = deepcopy(length)
+        length = [
+            [i, len(operator[i])]
+            for i in range(len(operator)) 
+            if operator[i] not in ('-', '+')
+        ]
+        _idx = deepcopy(length)
         _operator = deepcopy(operator)
-        _length.sort(key=lambda x: x[1])
-        for i in range(len(length)):
-            operator[length[i][0]], operator[length[i][0]-1] = _operator[_length[i][0]], _operator[_length[i][0]-1]
+        _idx.sort(key=lambda x: x[1])
+        for i, idx in enumerate(length):
+            operator[idx[0]], operator[idx[0]-1] = _operator[_idx[i][0]], _operator[_idx[i][0]-1]
         return operator
 
     def compute_operator(self, operator):
@@ -139,17 +143,15 @@ class FermionicSort:
         for terms, coeff in _terms.items():
             if coeff != 0:
                 _operator.append('+' if coeff > 0 else '-')
-                _operator.append(['%.2f' %abs(coeff)] + list(terms))
-  
+                _operator.append([f'{abs(coeff):.2f}'] + list(terms))
         return _operator
-    
+
     def print_operator(self, operator):
         sub = str.maketrans("0123456789^", "₀₁₂₃₄₅₆₇₈₉†")
-        
         line = ''
-        for i in range(len(operator)):
-            if operator[i] in ('-', '+'):
-                line += ' ' + operator[i]
+        for i, op in enumerate(operator):
+            if op in ('-', '+'):
+                line += ' ' + op
                 continue
 
             _operator = deepcopy(operator[i])
@@ -158,13 +160,12 @@ class FermionicSort:
                 notation = _operator[j].translate(sub)
                 line += " a" + notation
         return line[1:]
-    
+
     def __repr__(self):
         return f'{self.print_operator(self.operator)}'
-        
+
 
 if __name__ == "__main__":
     fo = FermionicSort('2.54 3^ 0^ 1 2')
     print('Output:', fo.operator)
-
     

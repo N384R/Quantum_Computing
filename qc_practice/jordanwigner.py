@@ -7,7 +7,7 @@ class _JordanWigner:
         self.fermion_string = [Fermion(fermion) for fermion in fermionstring]
         self.maximum = maximum
         self.pauli_strings = self.pauli_convert(self.fermion_string)
-        
+
     def __iter__(self):
         return iter(self.pauli_strings)
 
@@ -20,7 +20,7 @@ class _JordanWigner:
         num = fermion.num
         for i in range(num):
             z_string[i] = PauliOperator('Z')
-        
+
         if num < self.maximum:
             for i in range(num+1, self.maximum+1):
                 i_string[i] = PauliOperator('I')
@@ -28,9 +28,10 @@ class _JordanWigner:
         for key, value in z_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
-        
+
         paulistring1[num] = PauliOperator('X')
-        paulistring2[num] = PauliOperator('-iY') if fermion.type == 'creation' else PauliOperator('iY')
+        operator_type = '-iY' if fermion.type == 'creation' else 'iY'
+        paulistring2[num] = PauliOperator(operator_type)
 
         for key, value in i_string.items():
             paulistring1[key] = value
@@ -47,7 +48,7 @@ class _JordanWigner:
             else:
                 result *= pauli
         return result
-    
+
     def __repr__(self):
         return f'{self.pauli_strings}'
 
@@ -60,7 +61,7 @@ class JordanWigner():
 
     def __getitem__(self, key):
         return self.pauli_strings[key]
-    
+
     def __iter__(self):
         return iter(self.pauli_strings)
 
@@ -70,7 +71,7 @@ class JordanWigner():
             if fermionstring in ('-', '+'):
                 sign = fermionstring
                 continue
-            
+
             coeff = float(fermionstring[0])/(2**(len(fermionstring[1:])))
             coeff = -coeff if sign == '-' else coeff
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
@@ -81,7 +82,7 @@ class JordanWigner():
                 else:
                     result[p] = c * coeff
         return result
-    
+
     def _max_num(self, fermionstrings):
         maximum = 0
         for fermionstring in fermionstrings:

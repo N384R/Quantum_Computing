@@ -13,14 +13,13 @@ class PauliOperator:
         if not isinstance(other, PauliOperator):
             print("Error: Invalid Pauli Operator")
             exit()
-        
         if self.symbol == other.symbol:
             return PauliOperator('I')
 
         pauli, sign = self.calculation(self.symbol, other.symbol)
         return PauliOperator(sign + pauli)
-        
-    @staticmethod    
+    
+    @staticmethod
     def calculation(pauli1, pauli2):
         rules = {
             ('X', 'Y'): ('Z', 'i'),
@@ -44,7 +43,7 @@ class PauliOperator:
         else:
             _op = 'I'
             sign3 = ''
-    
+
         _sign = PauliOperator.calc_sign(sign1, sign2, sign3)
         return _op, _sign
 
@@ -77,7 +76,7 @@ class PauliOperator:
 
     def __repr__(self):
         return f'{self.symbol}'
-    
+
 
 if __name__ == "__main__":
     X = PauliOperator('X')

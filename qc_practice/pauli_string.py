@@ -7,10 +7,10 @@ class PauliString:
             for key, value in enumerate(pauli):
                 self.pauli_string[key] = value
         self.symbol = self.get_symbol(self.pauli_string)
-    
+
     def __getitem__(self, key):
         return self.pauli_string[key]
-    
+
     def __setitem__(self, key, value):
         self.pauli_string[key] = value
 
@@ -19,34 +19,34 @@ class PauliString:
 
     def __iter__(self):
         return iter(self.pauli_string)
-    
+
     def __len__(self):
         return len(self.pauli_string)
-    
+
     def keys(self):
         return self.pauli_string.keys()
 
     def values(self):
         return self.pauli_string.values()
-    
+
     def items(self):
         return self.pauli_string.items()
-    
+
     def get_symbol(self, pauli):
         return ''.join(f'{val}' for val in pauli.values())
-    
+
     def __mul__(self, other):
         if not isinstance(other, PauliString):
             print("Error: Invalid Pauli Operator")
             exit()
         return self.string_calculation(self.pauli_string, other.pauli_string)
 
-    def string_calculation(self, string1, string2):
+    def string_calculation(self, s1, s2):
         result = PauliString()
-        for key in string1.keys():
-            result[key] = string1[key] * string2[key]
+        for key in s1.keys():
+            result[key] = s1[key] * s2[key]
         return result
-    
+
     def __add__(self, other):
         if isinstance(other, PauliString):
             return PauliStrings(self, other)
@@ -57,7 +57,7 @@ class PauliString:
         if not isinstance(other, PauliString):
             return NotImplemented
         return self.symbol == other.symbol
-    
+
     def __hash__(self):
         return hash(self.symbol)
 
@@ -77,7 +77,7 @@ class PauliString:
             sign = '+ ' + sign
 
         return sign + line
-    
+
 class PauliStrings:
     def __init__(self, *args):
         self.paulistrings = args
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     string8 = PauliString([PauliOperator('Z'), PauliOperator('Z'),
                             PauliOperator('X'), PauliOperator('X')])
-    
+
 
     if string2 == string8:
         print(string2, string8, 'Equal')
