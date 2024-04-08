@@ -55,7 +55,7 @@ class _JordanWigner:
 class JordanWigner():
     def __init__(self, fermionstrings):
         self.fermion_strings = fermionstrings
-        self.maximum = self.max_num(fermionstrings)
+        self.maximum = self._max_num(fermionstrings)
         self.pauli_strings = self.call_jordan_wigner(self.fermion_strings)
 
     def __getitem__(self, key):
@@ -75,14 +75,14 @@ class JordanWigner():
             coeff = -coeff if sign == '-' else coeff
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
             for p in pauli:
-                c, p = self.pauli_arrange(p)
+                c, p = self._pauli_arrange(p)
                 if p in result:
                     result[p] += c * coeff
                 else:
                     result[p] = c * coeff
         return result
     
-    def max_num(self, fermionstrings):
+    def _max_num(self, fermionstrings):
         maximum = 0
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
@@ -91,7 +91,7 @@ class JordanWigner():
             maximum = num if num > maximum else maximum
         return maximum
 
-    def pauli_arrange(self, pauli):
+    def _pauli_arrange(self, pauli):
         coeff = 1
         for key, val in pauli.items():
             symbol = val.symbol

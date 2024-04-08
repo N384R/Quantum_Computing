@@ -8,4 +8,4 @@ print("Fermionic Sort:", fermi_sort)
 
 jw = JordanWigner(fermi_sort)
 
-print("Jordan Wigner Sort:", jw)
+print("Jordan Wigner Sort:", jw.pauli_strings)
