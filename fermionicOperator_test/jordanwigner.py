@@ -5,12 +5,12 @@ from fermionic_sort import FermionicSort
 
 class _JordanWigner:
     def __init__(self, fermionstring, maximum):
-        self.fermionstring = [Fermion(fermion) for fermion in fermionstring]
+        self.fermion_string = [Fermion(fermion) for fermion in fermionstring]
         self.maximum = maximum
-        self.paulistrings = self.pauli_convert(self.fermionstring)
+        self.pauli_strings = self.pauli_convert(self.fermion_string)
         
     def __iter__(self):
-        return iter(self.paulistrings)
+        return iter(self.pauli_strings)
 
     def _pauli_convert(self, fermion):
         paulistring1 = PauliString()
@@ -18,7 +18,7 @@ class _JordanWigner:
         z_string = PauliString()
         i_string = PauliString()
 
-        num = abs(fermion.num)
+        num = fermion.num
         for i in range(num):
             z_string[i] = PauliOperator('Z')
         
@@ -50,16 +50,35 @@ class _JordanWigner:
         return result
     
     def __repr__(self):
-        return f'{self.paulistrings}'
+        return f'{self.pauli_strings}'
+
 
 class JordanWigner():
     def __init__(self, fermionstrings):
-        self.fermionstrings = fermionstrings
+        self.fermion_strings = fermionstrings
         self.maximum = self.max_num(fermionstrings)
-        self.paulistrings = self.call_jordan_wigner(self.fermionstrings)
+        self.pauli_strings = self.call_jordan_wigner(self.fermion_strings)
+
+    def __getitem__(self, key):
+        return self.pauli_strings[key]
+    
+    def __iter__(self):
+        return iter(self.pauli_strings)
 
     def call_jordan_wigner(self, fermionstrings):
-        result = []
+        # result = ()
+        # for fermionstring in fermionstrings:
+        #     if fermionstring in ('-', '+'):
+        #         sign = fermionstring
+        #         continue
+            
+        #     coeff = float(fermionstring[0])/(2**(self.maximum+1))
+        #     pauli = _JordanWigner(fermionstring[1:], self.maximum)
+        #     for p in pauli:
+        #         p[0] *= PauliOperator('-I') if sign == '-' else PauliOperator('I')
+        #         result += ((coeff, p),)
+
+        result = {}
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
                 sign = fermionstring
@@ -69,7 +88,8 @@ class JordanWigner():
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
             for p in pauli:
                 p[0] *= PauliOperator('-I') if sign == '-' else PauliOperator('I')
-                result.append([coeff, p])
+                result[p] = coeff
+
         return result
     
     def max_num(self, fermionstrings):
@@ -81,15 +101,29 @@ class JordanWigner():
             maximum = num if num > maximum else maximum
         return maximum
 
+    def pauli_compute(self, pauli):
+        result = {}
+        for key in pauli:
+            symbol = ''.join(f'{val}' for val in key.values())
+            count_m, count_i = symbol.count('-'), symbol.count('i')
+            minus = -1 if count_m == 1 else 1
+            val = (-1)
+            if key in result:
+                result[key] += 
+            else:
+                result[key] = 
+        return result
+
     def __repr__(self):
         line = ''
-        for i in range(len(self.paulistrings)):
-            symbol = ''.join([f'{val}' for val in self.paulistrings[i][1].values()])
+        for key in self.pauli_strings.keys():
+            symbol = ''.join(f'{val}' for val in key.values())
             count_m, count_i = symbol.count('-'), symbol.count('i')
             line += '-' if count_m == 1 else '+'
-            line += f' ({self.paulistrings[i][0]})'
+            line += f' ({self.pauli_strings[key]})'
             line += 'i' if count_i == 1 else ''
             line += ' ' + symbol.replace('-', '').replace('i', '') + ' '
+        
         return line
 
 

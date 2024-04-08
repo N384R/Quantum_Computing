@@ -68,7 +68,7 @@ class PauliString:
     
 class PauliStrings:
     def __init__(self, *args):
-        self.paulistrings = sorted(args, key=lambda x: str(x).replace('i', ''))
+        self.paulistrings = tuple(sorted(args, key=lambda x: str(x).replace('i', '')))
 
     def __getitem__(self, key):
         return self.paulistrings[key]
