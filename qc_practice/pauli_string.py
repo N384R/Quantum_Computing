@@ -1,3 +1,4 @@
+import sys
 from .pauli_operator import PauliOperator
 
 class PauliString:
@@ -38,10 +39,10 @@ class PauliString:
     def __mul__(self, other):
         if not isinstance(other, PauliString):
             print("Error: Invalid Pauli Operator")
-            exit()
-        return self.string_calculation(self.pauli_string, other.pauli_string)
+            sys.exit()
+        return self._string_calculation(self.pauli_string, other.pauli_string)
 
-    def string_calculation(self, s1, s2):
+    def _string_calculation(self, s1, s2):
         result = PauliString()
         for key in s1.keys():
             result[key] = s1[key] * s2[key]
