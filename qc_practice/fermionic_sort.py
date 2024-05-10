@@ -143,7 +143,7 @@ class FermionicSort:
         for terms, coeff in _terms.items():
             if coeff != 0:
                 _operator.append('+' if coeff > 0 else '-')
-                _operator.append([f'{abs(coeff):.2f}'] + list(terms))
+                _operator.append([f'{abs(coeff)}'] + list(terms))
         return _operator
 
     def print_operator(self, operator):

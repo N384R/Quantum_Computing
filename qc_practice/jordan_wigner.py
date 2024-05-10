@@ -1,4 +1,5 @@
 from .fermion import Fermion
+from .fermionic_sort import FermionicSort
 from .pauli_operator import PauliOperator
 from .pauli_string import PauliString, PauliStrings
 
@@ -85,6 +86,7 @@ class JordanWigner():
 
     def _max_num(self, fermionstrings):
         maximum = 0
+        print(fermionstrings)
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
                 continue
@@ -118,12 +120,19 @@ class JordanWigner():
             if values.real != 0 and values.imag != 0:
                 line += f'{values}'
             elif values.real == 0 and values.imag != 0:
-                line += f'({abs(values.imag):.5f})i'
+                line += f'({abs(values.imag)})i'
             else:
-                line += f'({abs(values.real):.5f})'
+                line += f'({abs(values.real)})'
             line += ' ' + symbol + ' '
         return line
 
+class JordanWignerMapper():
+    def __init__(self, operator):
+        self.fermi_sort = FermionicSort(operator)
+        self.pauli_string = JordanWigner(self.fermi_sort)
+
+    def __repr__(self):
+        return f'{self.pauli_string}'
 
 if __name__ == '__main__':
     jw = JordanWigner(['-', ['4.00', '1^']])
