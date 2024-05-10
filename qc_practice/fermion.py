@@ -11,10 +11,9 @@ class Fermion:
         try:
             if self.type == 'creation':
                 return int(self.fermion.replace('^', ''))
-            elif self.type == 'annihilation':
-                return int(self.fermion)
-        except:
-            self.type == 'others'
+            return int(self.fermion)
+        except ValueError:
+            self.type = 'others'
             return self.fermion
     
     def __repr__(self):
@@ -32,5 +31,5 @@ if __name__ == "__main__":
     fermion_list = ['2', '1^', '3', '2^', '1']
     fermion_objects = [Fermion(fermion) for fermion in fermion_list]
 
-    sorted_fermions = Fermion.sort_fermions(fermion_objects)
-    print(sorted_fermions)
+    sorted_fermion = Fermion.sort_fermions(fermion_objects)
+    print(sorted_fermion)

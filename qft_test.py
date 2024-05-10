@@ -38,6 +38,7 @@ for i in range(num):
 
 qc.draw('mpl')
 
+#%%
 
 shots = 2048
 job = simulator.run(qc, shots=shots)

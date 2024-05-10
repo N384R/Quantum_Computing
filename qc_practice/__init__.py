@@ -1,3 +1,5 @@
+# __init__.py
+
 from .fermion import Fermion
 from .fermionic_sort import FermionicSort
 from .jordanwigner import JordanWigner

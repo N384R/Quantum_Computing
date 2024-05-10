@@ -1,5 +1,9 @@
-from qc_practice import Fermion
+#%%
+from qiskit import QuantumCircuit
 
-a = Fermion('1')
+ELECTRONS = 2
+qc = QuantumCircuit(2*ELECTRONS)
+for qubit in range(ELECTRONS):
+    qc.x(qubit)
 
-print(a)
+qc.draw('mpl')
