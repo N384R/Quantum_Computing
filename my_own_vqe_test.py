@@ -1,1 +1,5 @@
-from quantum_computer import Fermion
+from qc_practice import Fermion
+
+a = Fermion('1')
+
+print(a)
