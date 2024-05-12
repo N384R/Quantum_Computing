@@ -11,26 +11,27 @@ TWO_ELEC = mol.intor('int2e')
 OCC = rhf.get_occ()
 ORBITAL = HCORE.shape[0]
 
-second_q = ''
+SECOND_Q = ''
 for i in range(ORBITAL):
     for j in range(ORBITAL):
-        second_q += f'{HCORE[i][j]} {i}^ {j} ' ## 더하기 부호 표시가 없음
+        SIGN = ' +' if HCORE[i][j] > 0 else ''
+        SECOND_Q += f'{SIGN} {HCORE[i][j]} {i}^ {j} '
 
 for i in range(ORBITAL):
     for j in range(ORBITAL):
         for k in range(ORBITAL):
             for l in range(ORBITAL):
-                second_q += f'{TWO_ELEC[i][j][k][l]} {i}^ {j}^ {k} {l} '
+                SIGN = ' +' if TWO_ELEC[i][j][k][l] > 0 else ''
+                SECOND_Q += f'{SIGN} {TWO_ELEC[i][j][k][l]} {i}^ {j}^ {k} {l} '
 
-print(second_q)
-pauli = JordanWignerMapper(second_q)
+pauli = JordanWignerMapper(SECOND_Q)
 print(pauli)
 
 #%%
 
 
-qc = QuantumCircuit(2*ORBITAL)
-for qubit in range(ORBITAL):
-    qc.x(qubit)
+# qc = QuantumCircuit(2*ORBITAL)
+# for qubit in range(ORBITAL):
+#     qc.x(qubit)
 
-qc.draw('mpl')
+# qc.draw('mpl')

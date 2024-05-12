@@ -58,7 +58,8 @@ class JordanWigner():
     def __init__(self, fermionstrings):
         self.fermion_strings = fermionstrings
         self.maximum = self._max_num(fermionstrings)
-        self.pauli_strings = self.call_jordan_wigner(self.fermion_strings)
+        compute_pauli = self.call_jordan_wigner(self.fermion_strings)
+        self.pauli_strings = self._remove_zeros(compute_pauli)
 
     def __getitem__(self, key):
         return self.pauli_strings[key]
@@ -86,7 +87,6 @@ class JordanWigner():
 
     def _max_num(self, fermionstrings):
         maximum = 0
-        print(fermionstrings)
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
                 continue
@@ -107,6 +107,12 @@ class JordanWigner():
                 pauli[key] *= PauliOperator('-iI')
         pauli.symbol = pauli.get_symbol(pauli)
         return coeff, pauli
+
+    def _remove_zeros(self, pauli):
+        for key, val in pauli.copy().items():
+            if val.real == 0 and val.imag == 0:
+                del pauli[key]
+        return pauli
 
     def __repr__(self):
         line = ''

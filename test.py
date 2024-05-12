@@ -1,5 +1,5 @@
 from qc_practice.fermionic_sort import FermionicSort
-from qc_practice.jw import JordanWigner
+from qc_practice.jordan_wigner import JordanWigner
 
 # operator = input("Input: ")
 OPERATOR = '-1.120959456292115 0^ 0 -0.9593757718161824 0^ 1 -0.9593757718161824 1^ 0 -1.120959456292115 1^ 1'
