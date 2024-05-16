@@ -26,7 +26,7 @@ class _JordanWigner:
             for i in range(num+1, self.maximum+1):
                 i_string[i] = PauliOperator('I')
 
-        for key, value in z_string.items():
+        for key, value in i_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
 
@@ -34,7 +34,7 @@ class _JordanWigner:
         operator_type = '-iY' if fermion.type == 'creation' else 'iY'
         paulistring2[num] = PauliOperator(operator_type)
 
-        for key, value in i_string.items():
+        for key, value in z_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
 
@@ -136,10 +136,25 @@ class JordanWigner():
 class JordanWignerMapper():
     def __init__(self, operator):
         self.fermi_sort = FermionicSort(operator)
-        self.pauli_string = JordanWigner(self.fermi_sort)
+        self.pauli_strings = JordanWigner(self.fermi_sort).pauli_strings
 
     def __repr__(self):
-        return f'{self.pauli_string}'
+        line = ''
+        sorted_pauli = dict(sorted(self.pauli_strings.items(), key=lambda x: str(x)))
+        for key, values in sorted_pauli.items():
+            symbol = ''.join(f'{val}' for val in key.values())
+            if values.real > 0 or values.imag > 0:
+                line += '+ '
+            else:
+                line += '- '
+            if values.real != 0 and values.imag != 0:
+                line += f'{values}'
+            elif values.real == 0 and values.imag != 0:
+                line += f'({abs(values.imag):.16f})i'
+            else:
+                line += f'({abs(values.real):.16f})'
+            line += ' ' + symbol + ' '
+        return line
 
 if __name__ == '__main__':
     jw = JordanWigner(['-', ['4.00', '1^']])

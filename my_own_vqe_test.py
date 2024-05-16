@@ -41,7 +41,7 @@ for i in range(NUM):
                 SECOND_Q += f'{SIGN} {coeff:.16f} {i+NUM}^ {k+NUM}^ {l+NUM} {j+NUM}' + '\n'
 
 pauli = JordanWignerMapper(SECOND_Q)
-print(SECOND_Q)
+# print(SECOND_Q)
 print(pauli)
 
 #%%
