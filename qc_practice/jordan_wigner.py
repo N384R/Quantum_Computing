@@ -107,7 +107,7 @@ class JordanWigner():
                 pauli[key] *= PauliOperator('-iI')
         pauli.symbol = pauli.get_symbol(pauli)
         return coeff, pauli
-
+    
     def _remove_zeros(self, pauli):
         for key, val in pauli.copy().items():
             if val.real == 0 and val.imag == 0:
@@ -126,9 +126,9 @@ class JordanWigner():
             if values.real != 0 and values.imag != 0:
                 line += f'{values}'
             elif values.real == 0 and values.imag != 0:
-                line += f'({abs(values.imag)})i'
+                line += f'({abs(values.imag):.16f})i'
             else:
-                line += f'({abs(values.real)})'
+                line += f'({abs(values.real):.16f})'
             line += ' ' + symbol + ' '
         return line
 

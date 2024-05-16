@@ -155,7 +155,7 @@ class FermionicSort:
                 continue
 
             _operator = deepcopy(operator[i])
-            line += ' ' + str(_operator[0])
+            line += f' {_operator[0]:.16f}'
             for j in range(1, len(_operator)):
                 notation = _operator[j].translate(sub)
                 line += " a" + notation
