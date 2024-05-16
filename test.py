@@ -2,7 +2,7 @@ from qc_practice.fermionic_sort import FermionicSort
 from qc_practice.jordan_wigner import JordanWigner
 
 # operator = input("Input: ")
-OPERATOR = '-1.120959456292115 0^ 0 -0.9593757718161824 0^ 1 -0.9593757718161824 1^ 0 -1.120959456292115 1^ 1'
+OPERATOR = '1.00 0^ 0 +0.5 1^ 1 -0.3 0^ 1 +0.30 1^ 0'
 fermi_sort = FermionicSort(OPERATOR)
 print("\nFermionic Sort:", fermi_sort)
 

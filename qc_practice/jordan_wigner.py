@@ -77,6 +77,7 @@ class JordanWigner():
             coeff = float(fermionstring[0])/(2**(len(fermionstring[1:])))
             coeff = -coeff if sign == '-' else coeff
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
+            print(coeff, pauli)
             for p in pauli:
                 c, p = self._pauli_arrange(p)
                 if p in result:
@@ -107,7 +108,7 @@ class JordanWigner():
                 pauli[key] *= PauliOperator('-iI')
         pauli.symbol = pauli.get_symbol(pauli)
         return coeff, pauli
-    
+
     def _remove_zeros(self, pauli):
         for key, val in pauli.copy().items():
             if val.real == 0 and val.imag == 0:
