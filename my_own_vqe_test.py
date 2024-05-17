@@ -17,8 +17,7 @@ NUM = HCORE.shape[0]
 TWO_ELEC = mol.intor('int2e')
 # TWO_ELEC_MO = np.einsum('pi,qj,rk,sl,ijkl->pqrs', C, C, C, C, mol.intor('int2e'))
 TWO_ELEC_MO = ao2mo.kernel(mol, C, TWO_ELEC, compact=False)
-TWO_ELEC_MO = TWO_ELEC_MO.reshape((NUM, NUM, NUM, NUM)).transpose(0, 2, 1, 3)
-
+TWO_ELEC_MO = TWO_ELEC_MO.reshape((NUM, NUM, NUM, NUM))
 SECOND_Q = ''
 for i in range(NUM):
     coeff = HCORE_MO[i, i]
@@ -31,17 +30,17 @@ for i in range(NUM):
     for j in range(NUM):
         for k in range(NUM):
             for l in range(NUM):
-                coeff = TWO_ELEC_MO[i, k, j, l]/2
+                coeff = TWO_ELEC_MO[i, j, k, l]/2
                 if coeff < 1e-10:
                     continue
                 SIGN = '+' if coeff > 0 else ''
                 SECOND_Q += f'{SIGN} {coeff:.16f} {i}^ {k}^ {l} {j}' + '\n'
-                SECOND_Q += f'{SIGN} {coeff:.16f} {i}^ {k+NUM}^ {j+NUM} {l}' + '\n'
-                SECOND_Q += f'{SIGN} {coeff:.16f} {i+NUM}^ {k}^ {j} {l+NUM}' + '\n'
+                SECOND_Q += f'{SIGN} {coeff:.16f} {i}^ {k+NUM}^ {l+NUM} {j}' + '\n'
+                SECOND_Q += f'{SIGN} {coeff:.16f} {i+NUM}^ {k}^ {l} {j+NUM}' + '\n'
                 SECOND_Q += f'{SIGN} {coeff:.16f} {i+NUM}^ {k+NUM}^ {l+NUM} {j+NUM}' + '\n'
 
 pauli = JordanWignerMapper(SECOND_Q)
-# print(SECOND_Q)
+print(SECOND_Q)
 print(pauli)
 
 #%%

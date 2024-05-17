@@ -13,7 +13,7 @@ class PauliOperator:
         if not isinstance(other, PauliOperator):
             print("Error: Invalid Pauli Operator")
             exit()
-        if self.symbol == other.symbol:
+        if self.symbol == other.symbol and 'i' not in self.symbol:
             return PauliOperator('I')
 
         pauli, sign = self.calculation(self.symbol, other.symbol)

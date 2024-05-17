@@ -15,7 +15,7 @@ TWO_ELEC = mol.intor('int2e')
 
 HCORE_MO = C.T @ HCORE @ C
 TWO_ELEC_MO = ao2mo.kernel(mol, C, TWO_ELEC, compact=False)
-TWO_ELEC_MO = TWO_ELEC_MO.reshape((NUM, NUM, NUM, NUM)).transpose(0, 2, 1, 3)
+TWO_ELEC_MO = TWO_ELEC_MO.reshape((NUM, NUM, NUM, NUM))
 
 FOCK_MO = np.zeros_like(HCORE)
 

@@ -81,10 +81,10 @@ class PauliString:
 
 class PauliStrings:
     def __init__(self, *args):
-        self.paulistrings = args
+        self.pauli_strings = args
 
     def __getitem__(self, key):
-        return self.paulistrings[key]
+        return self.pauli_strings[key]
 
     def __add__(self, other):
         if isinstance(other, PauliString):
@@ -100,10 +100,11 @@ class PauliStrings:
         return result
 
     def __repr__(self):
-        return ' '.join([f'{string}' for string in self.paulistrings])
+        return ' '.join([f'{string}' for string in self.pauli_strings])
+
 
 if __name__ == '__main__':
-    string1 = PauliString([PauliOperator('Z'), PauliOperator('iX'), 
+    string1 = PauliString([PauliOperator('Z'), PauliOperator('iX'),
                            PauliOperator('-Y'), PauliOperator('I')])
     print('1:', string1)
 

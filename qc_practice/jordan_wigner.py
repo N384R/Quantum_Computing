@@ -26,7 +26,7 @@ class _JordanWigner:
             for i in range(num+1, self.maximum+1):
                 i_string[i] = PauliOperator('I')
 
-        for key, value in i_string.items():
+        for key, value in z_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
 
@@ -34,7 +34,7 @@ class _JordanWigner:
         operator_type = '-iY' if fermion.type == 'creation' else 'iY'
         paulistring2[num] = PauliOperator(operator_type)
 
-        for key, value in z_string.items():
+        for key, value in i_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
 
@@ -48,6 +48,8 @@ class _JordanWigner:
                 result = pauli
             else:
                 result *= pauli
+            # print('pauli:', pauli)
+            # print('result', result)
         return result
 
     def __repr__(self):
@@ -76,8 +78,9 @@ class JordanWigner():
 
             coeff = float(fermionstring[0])/(2**(len(fermionstring[1:])))
             coeff = -coeff if sign == '-' else coeff
+            print(fermionstring)
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
-            print(coeff, pauli)
+            print(f'{coeff:.8f} {pauli}')
             for p in pauli:
                 c, p = self._pauli_arrange(p)
                 if p in result:
@@ -150,9 +153,9 @@ class JordanWignerMapper():
             if values.real != 0 and values.imag != 0:
                 line += f'{values}'
             elif values.real == 0 and values.imag != 0:
-                line += f'({abs(values.imag):.16f})i'
+                line += f'({abs(values.imag):.15f})i'
             else:
-                line += f'({abs(values.real):.16f})'
+                line += f'({abs(values.real):.15f})'
             line += ' ' + symbol + ' '
         return line
 
