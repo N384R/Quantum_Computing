@@ -1,7 +1,9 @@
 #%%
 from pyscf import gto, scf, ao2mo
-from qc_practice import JordanWignerMapper
 from qiskit import QuantumCircuit
+from qiskit_aer import AerProvider
+
+from qc_practice import JordanWignerMapper
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.735', basis = 'sto-3g')
 rhf = scf.RHF(mol)
@@ -59,7 +61,7 @@ for i in range(NUM//2):
 uccsd_pauli = JordanWignerMapper(uccsd_ansatz)
 print(uccsd_pauli)
 
-qc = QuantumCircuit(2*NUM)
+qc = QuantumCircuit(2*NUM, 2*NUM)
 for qubit in range(NUM-1):
     qc.x(qubit)
     qc.x(qubit+NUM)
@@ -98,8 +100,47 @@ for p_string, values in uccsd_pauli.items():
 
 qc.barrier()
 
-for p_string, values in hamiltonian_pauli.items():
-    print(p_string, values)
+def measure(qc, hamiltonian_pauli, shots=10000):
+    total_energy = 0.
+    for p_string, values in hamiltonian_pauli.items():
+        for idx, p in p_string.items():
+            if p.symbol == 'X':
+                qc.h(idx)
+
+            elif p.symbol == 'Y':
+                qc.sdg(idx)
+                qc.h(idx)
+
+        qc.barrier()
+
+        for idx, p in p_string.items():
+            if p.symbol == 'I':
+                continue
+
+            qc.measure(idx, idx)
+        
+        qc.barrier()
+
+        if all([p.symbol == 'I' for p in p_string.values()]):
+            total_energy += values.real
+            print(f'Expectation: {values.real:18.15f} {p_string}')
+            continue
+
+        backend = AerProvider().get_backend('qasm_simulator')
+        result = backend.run(qc, shots=shots).result().get_counts()
+
+        counts = 0
+        for key, value in result.items():
+            counts += (-1)**sum([int(k) for k in key]) * value
+
+        expectation = counts/shots * values.real
+
+        print(f'Expectation: {expectation:18.15f} {p_string}')
+        total_energy += expectation
+    return total_energy
+
+total_energy = measure(qc, hamiltonian_pauli)
+print(total_energy)
 
 
 qc.draw('mpl')
