@@ -42,3 +42,11 @@ jw = JordanWigner(fermi_sort)
 
 print("Jordan Wigner Sort:")
 print(jw)
+
+#%%
+
+from qc_practice.pauli_string import PauliString
+from qc_practice.pauli_operator import PauliOperator
+
+string1 = PauliString([PauliOperator('Z'), PauliOperator('X')])
+print(string1)

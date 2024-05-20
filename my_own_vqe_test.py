@@ -1,6 +1,4 @@
 #%%
-from itertools import permutations
-import numpy as np
 from pyscf import gto, scf, ao2mo
 from qc_practice import JordanWignerMapper
 from qiskit import QuantumCircuit
@@ -40,14 +38,47 @@ for i in range(NUM):
                 SECOND_Q += f'{SIGN} {coeff:.16f} {i+NUM}^ {k+NUM}^ {l+NUM} {j+NUM}' + '\n'
 
 pauli = JordanWignerMapper(SECOND_Q)
-print(SECOND_Q)
-print(pauli)
 
-#%%
+qc = QuantumCircuit(2*NUM)
+for qubit in range(NUM-1):
+    qc.x(qubit)
+    qc.x(qubit+NUM)
 
 
-# qc = QuantumCircuit(2*ORBITAL)
-# for qubit in range(ORBITAL):
-#     qc.x(qubit)
+for p_string, values in pauli.items():
+    print(p_string, values)
 
-# qc.draw('mpl')
+    qc.barrier()
+
+    for idx, p in p_string.items():
+        if p.symbol == 'X':
+            qc.h(idx)
+
+        elif p.symbol == 'Y':
+            qc.s(idx)
+            qc.h(idx)
+
+    qc.barrier()
+
+    for i in range(2*NUM-1):
+        qc.cx(i, i+1)
+
+    qc.rz(values.real, 2*NUM-1)
+
+    for i in reversed(range(2*NUM-1)):
+        qc.cx(i, i+1)
+
+    qc.barrier()
+
+    for idx, p in p_string.items():
+        if p.symbol == 'X':
+            qc.h(idx)
+
+        elif p.symbol == 'Y':
+            qc.h(idx)
+            qc.sdg(idx)
+
+
+
+
+qc.draw('mpl')

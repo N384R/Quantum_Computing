@@ -48,8 +48,6 @@ class _JordanWigner:
                 result = pauli
             else:
                 result *= pauli
-            # print('pauli:', pauli)
-            # print('result', result)
         return result
 
     def __repr__(self):
@@ -78,9 +76,7 @@ class JordanWigner():
 
             coeff = float(fermionstring[0])/(2**(len(fermionstring[1:])))
             coeff = -coeff if sign == '-' else coeff
-            print(fermionstring)
             pauli = _JordanWigner(fermionstring[1:], self.maximum)
-            print(f'{coeff:.8f} {pauli}')
             for p in pauli:
                 c, p = self._pauli_arrange(p)
                 if p in result:
@@ -116,12 +112,12 @@ class JordanWigner():
         for key, val in pauli.copy().items():
             if val.real == 0 and val.imag == 0:
                 del pauli[key]
-        return pauli
+        sorted_pauli = dict(sorted(pauli.items(), key=lambda x: str(x)))
+        return sorted_pauli
 
     def __repr__(self):
         line = ''
-        sorted_pauli = dict(sorted(self.pauli_strings.items(), key=lambda x: str(x)))
-        for key, values in sorted_pauli.items():
+        for key, values in self.pauli_strings.items():
             symbol = ''.join(f'{val}' for val in key.values())
             if values.real > 0 or values.imag > 0:
                 line += '+ '
@@ -140,6 +136,15 @@ class JordanWignerMapper():
     def __init__(self, operator):
         self.fermi_sort = FermionicSort(operator)
         self.pauli_strings = JordanWigner(self.fermi_sort).pauli_strings
+
+    def __getitem__(self, key):
+        return self.pauli_strings[key]
+
+    def items(self):
+        return self.pauli_strings.items()
+
+    def __iter__(self):
+        return iter(self.pauli_strings)
 
     def __repr__(self):
         line = ''

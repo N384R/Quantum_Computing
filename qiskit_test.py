@@ -82,19 +82,21 @@ ansatz = UCCSD(
     es_problem.num_particles,
     mapper,
     initial_state=HartreeFock(
-        es_problem.num_spatial_orbitals, 
+        es_problem.num_spatial_orbitals,
         es_problem.num_particles,
         mapper
     ),
 )
 
-vqe_solver = VQE(Estimator(), ansatz, SLSQP())
-vqe_solver.initial_point = [0.0] * ansatz.num_parameters
+ansatz.decompose().decompose().decompose().draw('mpl')
 
-calc = GroundStateEigensolver(mapper, vqe_solver)
-res = calc.solve(es_problem)
-print(res)
+# vqe_solver = VQE(Estimator(), ansatz, SLSQP())
+# vqe_solver.initial_point = [0.0] * ansatz.num_parameters
 
-calc = GroundStateEigensolver(mapper, numpy_solver)
-res = calc.solve(es_problem)
-print(res)
+# calc = GroundStateEigensolver(mapper, vqe_solver)
+# res = calc.solve(es_problem)
+# print(res)
+
+# calc = GroundStateEigensolver(mapper, numpy_solver)
+# res = calc.solve(es_problem)
+# print(res)
