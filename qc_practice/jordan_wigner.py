@@ -112,8 +112,8 @@ class JordanWigner():
         for key, val in pauli.copy().items():
             if val.real == 0 and val.imag == 0:
                 del pauli[key]
-        sorted_pauli = dict(sorted(pauli.items(), key=lambda x: str(x)))
-        return sorted_pauli
+        # sorted_pauli = dict(sorted(pauli.items(), key=lambda x: str(x)))
+        return pauli
 
     def __repr__(self):
         line = ''
@@ -148,8 +148,7 @@ class JordanWignerMapper():
 
     def __repr__(self):
         line = ''
-        sorted_pauli = dict(sorted(self.pauli_strings.items(), key=lambda x: str(x)))
-        for key, values in sorted_pauli.items():
+        for key, values in self.pauli_strings.items():
             symbol = ''.join(f'{val}' for val in key.values())
             if values.real > 0 or values.imag > 0:
                 line += '+ '

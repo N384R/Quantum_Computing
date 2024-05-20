@@ -88,7 +88,7 @@ ansatz = UCCSD(
     ),
 )
 
-ansatz.decompose().decompose().decompose().draw('mpl')
+ansatz.decompose().decompose().draw('mpl')
 
 # vqe_solver = VQE(Estimator(), ansatz, SLSQP())
 # vqe_solver.initial_point = [0.0] * ansatz.num_parameters
