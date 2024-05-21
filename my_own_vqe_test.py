@@ -103,23 +103,24 @@ qc.barrier()
 def measure(qc, hamiltonian_pauli, shots=10000):
     total_energy = 0.
     for p_string, values in hamiltonian_pauli.items():
+        qc_2 = qc.copy()
         for idx, p in p_string.items():
             if p.symbol == 'X':
-                qc.h(idx)
+                qc_2.h(idx)
 
             elif p.symbol == 'Y':
-                qc.sdg(idx)
-                qc.h(idx)
+                qc_2.sdg(idx)
+                qc_2.h(idx)
 
-        qc.barrier()
+        qc_2.barrier()
 
         for idx, p in p_string.items():
             if p.symbol == 'I':
                 continue
 
-            qc.measure(idx, idx)
-        
-        qc.barrier()
+            qc_2.measure(idx, idx)
+
+        qc_2.barrier()
 
         if all([p.symbol == 'I' for p in p_string.values()]):
             total_energy += values.real
@@ -127,7 +128,7 @@ def measure(qc, hamiltonian_pauli, shots=10000):
             continue
 
         backend = AerProvider().get_backend('qasm_simulator')
-        result = backend.run(qc, shots=shots).result().get_counts()
+        result = backend.run(qc_2, shots=shots).result().get_counts()
 
         counts = 0
         for key, value in result.items():
@@ -142,5 +143,4 @@ def measure(qc, hamiltonian_pauli, shots=10000):
 total_energy = measure(qc, hamiltonian_pauli)
 print(total_energy)
 
-
-qc.draw('mpl')
+import scipy.optimize as opt

@@ -58,7 +58,7 @@ from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_algorithms import NumPyMinimumEigensolver
 
 from qiskit_algorithms import VQE
-from qiskit_algorithms.optimizers import SLSQP
+from qiskit_algorithms.optimizers import POWELL
 from qiskit.primitives import Estimator
 from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
 
@@ -90,12 +90,12 @@ ansatz = UCCSD(
 
 ansatz.decompose().decompose().draw('mpl')
 
-# vqe_solver = VQE(Estimator(), ansatz, SLSQP())
-# vqe_solver.initial_point = [0.0] * ansatz.num_parameters
+vqe_solver = VQE(Estimator(), ansatz, POWELL())
+vqe_solver.initial_point = [0.0] * ansatz.num_parameters
 
-# calc = GroundStateEigensolver(mapper, vqe_solver)
-# res = calc.solve(es_problem)
-# print(res)
+calc = GroundStateEigensolver(mapper, vqe_solver)
+res = calc.solve(es_problem)
+print(res)
 
 # calc = GroundStateEigensolver(mapper, numpy_solver)
 # res = calc.solve(es_problem)

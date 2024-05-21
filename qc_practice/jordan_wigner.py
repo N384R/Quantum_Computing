@@ -110,7 +110,7 @@ class JordanWigner():
 
     def _remove_zeros(self, pauli):
         for key, val in pauli.copy().items():
-            if val.real == 0 and val.imag == 0:
+            if abs(val.real) < 1e-15 and abs(val.imag) < 1e-15:
                 del pauli[key]
         # sorted_pauli = dict(sorted(pauli.items(), key=lambda x: str(x)))
         return pauli
