@@ -6,22 +6,20 @@ from qc_practice import JordanWignerMapper
 
 class VQE:
     def __init__(self, mol):
-        rhf = scf.RHF(mol)
+        self.mol = mol
+        rhf = scf.RHF(self.mol)
         rhf.kernel()
         c = rhf.mo_coeff
         hcore = rhf.get_hcore()
         hcore_mo = c.T @ hcore @ c
         self._num = hcore.shape[0]
-        two_elec = mol.intor('int2e')
+        two_elec = self.mol.intor('int2e')
         # TWO_ELEC_MO = np.einsum('pi,qj,rk,sl,ijkl->pqrs', C, C, C, C, mol.intor('int2e'))
-        two_elec_mo = ao2mo.kernel(mol, c, two_elec, compact=False)
+        two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((self._num, self._num, self._num, self._num))
 
         self._shots = None
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
-
-        # self.qc = QuantumCircuit(2*self._num, 2*self._num)
-        # self._circuit(self.qc)
 
     def uccsd_ansatz(self, coeff):
         uccsd_fermion = ''
@@ -113,7 +111,7 @@ class VQE:
                     qc.sdg(idx)
 
     def _measure(self, qc, shots):
-        total_energy = 0.
+        energy = 0.
         for p_string, values in self.hamiltonian_pauli.items():
             qc_2 = qc.copy()
             for idx, p in p_string.items():
@@ -131,7 +129,7 @@ class VQE:
                 qc_2.measure(idx, idx)
 
             if all([p.symbol == 'I' for p in p_string.values()]):
-                total_energy += values.real
+                energy += values.real
                 # print(f'Expectation: {values.real:18.15f} {p_string}')
                 continue
 
@@ -145,8 +143,8 @@ class VQE:
             expectation = counts/shots * values.real
 
             # print(f'Expectation: {expectation:18.15f} {p_string}')
-            total_energy += expectation
-        return total_energy
+            energy += expectation
+        return energy
 
     def _batch(self, coeff):
         uccsd_ansatz = self.uccsd_ansatz(coeff)
@@ -163,5 +161,7 @@ class VQE:
         coeff = [1e-5] * (2 * self._num - 1)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
 
-        print(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}')
-        return optimized_energy.fun, optimized_energy.x
+        nuclear_repulsion = self.mol.energy_nuc()
+        total_energy = optimized_energy.fun + nuclear_repulsion
+        print(f'Optimized Electronic Energy: {total_energy:18.15f}')
+        return total_energy, optimized_energy.x
