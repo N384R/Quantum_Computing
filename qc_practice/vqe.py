@@ -158,7 +158,9 @@ class VQE:
 
     def run(self, shots=10000):
         self._shots = shots
-        coeff = [1e-5] * (2 * self._num - 1)
+        n = self._num
+        coeff = [1e-5] * ((2 * (n//2) **2) + ((n//2)**2 * n * (n - 1) // 2))
+        print(coeff)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
 
         nuclear_repulsion = self.mol.energy_nuc()
