@@ -118,7 +118,7 @@ class VQE:
                     qc.h(idx)
                     qc.sdg(idx)
 
-    def _measure(self, qc, shots):
+    def _measure(self, qc):
         energy = 0.
         for p_string, values in self.hamiltonian_pauli.items():
             qc_2 = qc.copy()
@@ -142,13 +142,13 @@ class VQE:
                 continue
 
             backend = AerProvider().get_backend('qasm_simulator')
-            result = backend.run(qc_2, shots=shots).result().get_counts()
+            result = backend.run(qc_2, shots=self._shots).result().get_counts()
 
             counts = 0
             for key, value in result.items():
                 counts += (-1)**sum(int(k) for k in key) * value
 
-            expectation = counts/shots * values.real
+            expectation = counts/self._shots * values.real
 
             # print(f'Expectation: {expectation:18.15f} {p_string}')
             energy += expectation
@@ -167,7 +167,7 @@ class VQE:
         print('Done')
 
         print('Measuring energy........... ', end='')
-        energy = self._measure(qc, self._shots)
+        energy = self._measure(qc)
         print('Done')
 
         if self.verbose:
@@ -198,7 +198,7 @@ class VQE:
             qc.x(qubit+self._num)
 
         print('Measuring energy... ', end='')
-        energy = self._measure(qc, shots)
+        energy = self._measure(qc)
         print('Done')
 
         total_energy = energy + nuclear_repulsion
