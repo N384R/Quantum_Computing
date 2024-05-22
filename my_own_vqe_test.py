@@ -1,3 +1,4 @@
+#%%
 from pyscf import gto
 from qc_practice import VQE
 

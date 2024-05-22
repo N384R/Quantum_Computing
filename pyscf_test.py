@@ -1,8 +1,11 @@
+#%%
 from pyscf import gto, scf
 
-mol_h2o = gto.M(atom = 'O 0 0 0; H 0 1 0; H 0 0 1', basis = 'ccpvdz')
-rhf_h2o = scf.RHF(mol_h2o)
-e_h2o = rhf_h2o.kernel()
+mol = gto.M(atom = 'Li 0 0 0; H 0 0 1.596', basis = 'sto-3g')
+rhf = scf.RHF(mol)
+e = rhf.kernel()
+elec_energy = rhf.energy_elec()
+print(elec_energy)
 
 #%%
 from pyscf import gto, scf

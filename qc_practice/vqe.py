@@ -8,18 +8,26 @@ class VQE:
     def __init__(self, mol):
         self.mol = mol
         rhf = scf.RHF(self.mol)
+        rhf.verbose = 0
         rhf.kernel()
         c = rhf.mo_coeff
         hcore = rhf.get_hcore()
         hcore_mo = c.T @ hcore @ c
         self._num = hcore.shape[0]
+        self._num_elec = self.mol.nelectron
         two_elec = self.mol.intor('int2e')
         # TWO_ELEC_MO = np.einsum('pi,qj,rk,sl,ijkl->pqrs', C, C, C, C, mol.intor('int2e'))
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((self._num, self._num, self._num, self._num))
 
+        self.verbose = False
         self._shots = None
+        self._iterations = 0
+
+        print('Computing Hamiltonian... ', end='')
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
+        print('Done')
+        print(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}\n')
 
     def uccsd_ansatz(self, coeff):
         uccsd_fermion = ''
@@ -75,7 +83,7 @@ class VQE:
         return JordanWignerMapper(second_q)
 
     def _circuit(self, qc, uccsd_ansatz):
-        for qubit in range(self._num-1):
+        for qubit in range(self._num_elec//2):
             qc.x(qubit)
             qc.x(qubit+self._num)
 
@@ -147,23 +155,49 @@ class VQE:
         return energy
 
     def _batch(self, coeff):
+        self._iterations += 1
+        print(f'Iteration: {self._iterations}')
+        print('Computing uccsd ansatz... ', end='')
         uccsd_ansatz = self.uccsd_ansatz(coeff)
+        print('Done')
+
+        print('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self._num, 2*self._num)
         self._circuit(qc, uccsd_ansatz)
+        print('Done')
+
+        print('Measuring energy... ', end='')
         energy = self._measure(qc, self._shots)
-        print('coeff: ', end='')
-        print([f'{val:9.6f}' for val in coeff], end='')
-        print(f' Energy: {energy:18.15f}')
+        print('Done')
+
+        if self.verbose:
+            print('coeff: ', end='')
+            print([f'{val:9.6f}' for val in coeff])
+        print(f'Electronic energy: {energy:18.15f}\n')
         return energy
 
     def run(self, shots=10000):
-        self._shots = shots
         n = self._num
-        coeff = [1e-5] * ((2 * (n//2) **2) + ((n//2)**2 * n * (n - 1) // 2))
-        print(coeff)
-        optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
-
+        self._shots = shots
         nuclear_repulsion = self.mol.energy_nuc()
+        coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
+        optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
         total_energy = optimized_energy.fun + nuclear_repulsion
         print(f'Optimized Electronic Energy: {total_energy:18.15f}')
         return total_energy, optimized_energy.x
+
+    def run_hf(self, shots=10000):
+        self._shots = shots
+        nuclear_repulsion = self.mol.energy_nuc()
+        qc = QuantumCircuit(2*self._num, 2*self._num)
+        for qubit in range(self._num_elec//2):
+            qc.x(qubit)
+            qc.x(qubit+self._num)
+
+        print('Measuring energy... ', end='')
+        energy = self._measure(qc, shots)
+        print('Done')
+
+        total_energy = energy + nuclear_repulsion
+        print(f'Optimized Electronic Energy: {total_energy:18.15f}')
+        return total_energy

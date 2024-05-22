@@ -2,13 +2,14 @@ from itertools import permutations
 import numpy as np
 from pyscf import gto, scf, ao2mo
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.735', basis = 'sto-3g')
+mol = gto.M(atom = 'Li 0 0 0; H 0 0 0.735', basis = 'sto-3g')
 rhf = scf.RHF(mol)
 EN = rhf.kernel()
 HCORE = rhf.get_hcore()
 D = rhf.make_rdm1()
 S = rhf.get_ovlp()
 C = rhf.mo_coeff
+electrons = mol.nelectron
 NUM = HCORE.shape[0]
 HCORE = rhf.get_hcore()
 TWO_ELEC = mol.intor('int2e')
@@ -35,3 +36,6 @@ print(pyscf_mo_energy)
 print(calc_mo_energy)
 
 print(TWO_ELEC_MO)
+
+occ = rhf.mo_occ
+print(occ)
