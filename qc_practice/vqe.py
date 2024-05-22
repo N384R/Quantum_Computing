@@ -24,7 +24,7 @@ class VQE:
         self._shots = None
         self._iterations = 0
 
-        print('Computing Hamiltonian... ', end='')
+        print('Computing Hamiltonian...... ', end='')
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
         print('Done')
         print(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}\n')
@@ -157,7 +157,7 @@ class VQE:
     def _batch(self, coeff):
         self._iterations += 1
         print(f'Iteration: {self._iterations}')
-        print('Computing uccsd ansatz... ', end='')
+        print('Computing uccsd ansatz..... ', end='')
         uccsd_ansatz = self.uccsd_ansatz(coeff)
         print('Done')
 
@@ -166,7 +166,7 @@ class VQE:
         self._circuit(qc, uccsd_ansatz)
         print('Done')
 
-        print('Measuring energy... ', end='')
+        print('Measuring energy........... ', end='')
         energy = self._measure(qc, self._shots)
         print('Done')
 
@@ -183,7 +183,9 @@ class VQE:
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
         total_energy = optimized_energy.fun + nuclear_repulsion
-        print(f'Optimized Electronic Energy: {total_energy:18.15f}')
+        print(f'Nuclear Repulsion Energy   : {nuclear_repulsion:18.15f}')
+        print(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
+        print(f'Total Energy: {total_energy:18.15f}')
         return total_energy, optimized_energy.x
 
     def run_hf(self, shots=10000):
