@@ -136,7 +136,7 @@ class VQE:
 
                 qc_2.measure(idx, idx)
 
-            if all([p.symbol == 'I' for p in p_string.values()]):
+            if all(p.symbol == 'I' for p in p_string.values()):
                 energy += values.real
                 # print(f'Expectation: {values.real:18.15f} {p_string}')
                 continue
@@ -146,7 +146,7 @@ class VQE:
 
             counts = 0
             for key, value in result.items():
-                counts += (-1)**sum([int(k) for k in key]) * value
+                counts += (-1)**sum(int(k) for k in key) * value
 
             expectation = counts/shots * values.real
 
@@ -183,6 +183,7 @@ class VQE:
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
         total_energy = optimized_energy.fun + nuclear_repulsion
+
         print(f'Nuclear Repulsion Energy   : {nuclear_repulsion:18.15f}')
         print(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
         print(f'Total Energy: {total_energy:18.15f}')
