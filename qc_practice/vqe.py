@@ -15,6 +15,7 @@ class VQE:
         hcore_mo = c.T @ hcore @ c
         self._num = hcore.shape[0]
         self._num_elec = self.mol.nelectron
+        self.nuclear_repulsion = self.mol.energy_nuc()
         two_elec = self.mol.intor('int2e')
         # TWO_ELEC_MO = np.einsum('pi,qj,rk,sl,ijkl->pqrs', C, C, C, C, mol.intor('int2e'))
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
@@ -27,7 +28,9 @@ class VQE:
         print('Computing Hamiltonian...... ', end='')
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
         print('Done')
-        print(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}\n')
+        total_energy = rhf.energy_elec()[0] + self.nuclear_repulsion
+        print(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}')
+        print(f'SCF Total Energy:      {total_energy:18.15f}\n')
 
     def uccsd_ansatz(self, coeff):
         uccsd_fermion = ''
@@ -82,11 +85,12 @@ class VQE:
 
         return JordanWignerMapper(second_q)
 
-    def _circuit(self, qc, uccsd_ansatz):
+    def _initialize(self, qc):
         for qubit in range(self._num_elec//2):
             qc.x(qubit)
             qc.x(qubit+self._num)
 
+    def _circuit(self, qc, uccsd_ansatz):
         for p_string, values in uccsd_ansatz.items():
             chk = []
             for idx, p in p_string.items():
@@ -163,6 +167,7 @@ class VQE:
 
         print('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self._num, 2*self._num)
+        self._initialize(qc)
         self._circuit(qc, uccsd_ansatz)
         print('Done')
 
@@ -177,21 +182,19 @@ class VQE:
         return energy
 
     def run(self, shots=10000):
+        print('Running VQE\n')
         n = self._num
         self._shots = shots
-        nuclear_repulsion = self.mol.energy_nuc()
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
-        total_energy = optimized_energy.fun + nuclear_repulsion
-
-        print(f'Nuclear Repulsion Energy   : {nuclear_repulsion:18.15f}')
+        total_energy = optimized_energy.fun + self.nuclear_repulsion
+        print(f'Nuclear Repulsion Energy   : {self.nuclear_repulsion:18.15f}')
         print(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
         print(f'Total Energy: {total_energy:18.15f}')
         return total_energy, optimized_energy.x
 
     def run_hf(self, shots=10000):
         self._shots = shots
-        nuclear_repulsion = self.mol.energy_nuc()
         qc = QuantumCircuit(2*self._num, 2*self._num)
         for qubit in range(self._num_elec//2):
             qc.x(qubit)
@@ -201,6 +204,6 @@ class VQE:
         energy = self._measure(qc)
         print('Done')
 
-        total_energy = energy + nuclear_repulsion
+        total_energy = energy + self.nuclear_repulsion
         print(f'Optimized Electronic Energy: {total_energy:18.15f}')
         return total_energy

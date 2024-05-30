@@ -70,3 +70,18 @@ rhf_h2o = scf.RHF(mol_h2o)
 opt_h2o = optimize(rhf_h2o)
 
 # %%
+
+from pyscf import gto, scf
+
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mf = scf.dhf.UHF(mol)
+mf.kernel()
+
+
+# %%
+
+from pyscf import gto, scf
+
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mf = scf.UHF(mol)
+mf.kernel()
