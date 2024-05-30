@@ -85,3 +85,17 @@ from pyscf import gto, scf
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
 mf = scf.UHF(mol)
 mf.kernel()
+
+#%%
+from pyscf import gto, scf
+from pyscf import cc
+
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+
+mf = scf.RHF(mol)
+mf.kernel()
+ccsd = cc.CCSD(mf)
+ccsd.kernel()
+
+e, c = ccsd.eeccsd(nroots=2, koopmans=True)
+print(e)

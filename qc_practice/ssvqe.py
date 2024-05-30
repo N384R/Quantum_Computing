@@ -56,5 +56,8 @@ class SSVQE(VQE):
         print('\nFinal Excited State Energies:')
         for i in range(self.nstates):
             state_energy = self.state_energies[i] + self.nuclear_repulsion
-            print(f'State_{i} Energy: {state_energy:18.15f}')
+            print(f'State_{i} Energy: {state_energy:18.15f}', end='\n' if i == 0 else '  ')
+            if i !=0:
+                print(f'Excitation Energy: {self.state_energies[i] - self.state_energies[0]:18.15f}')
+
         return self.state_energies
