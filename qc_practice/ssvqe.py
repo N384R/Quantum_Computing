@@ -20,12 +20,7 @@ class SSVQE(VQE):
         else:
             self.weights = weights
 
-    def _initialize(self, qc):
-        for qubit in range(self._num_elec//2):
-            qc.x(qubit)
-            qc.x(qubit+self._num)
-
-    def _vqe_batch(self, coeff):
+    def _batch(self, coeff):
         uccsd_ansatz = self.uccsd_ansatz(coeff)
         qc = QuantumCircuit(2*self._num, 2*self._num)
         self._initialize(qc)
@@ -46,7 +41,7 @@ class SSVQE(VQE):
         for i in range(self.nstates):
             self._iterations = 0
             self._current_state = i
-            state_energy = self._vqe_batch(coeff)
+            state_energy = self._batch(coeff)
             print(f'State_{i} Energy: {state_energy + self.nuclear_repulsion:18.15f}')
             self.state_energies.append(state_energy)
         weighted_energy = sum(self.weights[i] * self.state_energies[i] for i in range(self.nstates))
