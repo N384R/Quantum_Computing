@@ -22,7 +22,7 @@ class SSVQE(VQE):
 
     def _initialize(self, qc):
         for qubit in range(self._num_elec//2):
-            qc.x(qubit+1)
+            qc.x(qubit)
             qc.x(qubit+self._num)
 
     def _vqe_batch(self, coeff):
