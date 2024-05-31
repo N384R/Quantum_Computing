@@ -25,7 +25,7 @@ for i in bond_lengths:
 plt.plot(list(potential_energy_surface.keys()), list(potential_energy_surface.values()))
 plt.xlabel('Bond Length')
 plt.ylabel('Energy')
-plt.savefig('figures/H2_sto3g_hf_PES.png')
 
-with open('data/H2_sto3g_hf_PES.json', 'w', encoding='utf-8') as f:
-    json.dump(potential_energy_surface, f, indent=4)
+# plt.savefig('figures/H2_sto3g_hf_PES.png')
+# with open('data/H2_sto3g_hf_PES.json', 'w', encoding='utf-8') as f:
+#     json.dump(potential_energy_surface, f, indent=4)
