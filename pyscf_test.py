@@ -90,12 +90,87 @@ mf.kernel()
 from pyscf import gto, scf
 from pyscf import cc
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mol = gto.M(atom = 'H 0 0 0; H 0 0 2.5', basis = 'sto-3g')
 
-mf = scf.RHF(mol)
+mf = scf.UHF(mol)
 mf.kernel()
 ccsd = cc.CCSD(mf)
-ccsd.kernel()
+e = ccsd.kernel()
+total_e = mf.e_tot + e[0]
 
-e, c = ccsd.eeccsd(nroots=2, koopmans=True)
-print(e)
+nroots = 2
+
+eomsf_singlet = ccsd.eomsf_ccsd(nroots=nroots)
+print(eomsf_singlet[0])
+
+print(f'Root 0: {total_e}')
+for i in range(nroots):
+    print(f'Root {i+1}: {total_e + eomsf_singlet[0][i]}')
+
+# %%
+from itertools import permutations
+import numpy as np
+from pyscf import gto, scf, ao2mo
+
+mol = gto.M(atom = 'Li 0 0 0; H 0 0 0.735', basis = 'sto-3g')
+rhf = scf.RHF(mol)
+EN = rhf.kernel()
+HCORE = rhf.get_hcore()
+D = rhf.make_rdm1()
+S = rhf.get_ovlp()
+C = rhf.mo_coeff
+electrons = mol.nelectron
+NUM = HCORE.shape[0]
+HCORE = rhf.get_hcore()
+TWO_ELEC = mol.intor('int2e')
+
+HCORE_MO = C.T @ HCORE @ C
+TWO_ELEC_MO = ao2mo.kernel(mol, C, TWO_ELEC, compact=False)
+TWO_ELEC_MO = TWO_ELEC_MO.reshape((NUM, NUM, NUM, NUM))
+
+FOCK_MO = np.zeros_like(HCORE)
+
+for i in range(NUM):
+    FOCK_MO[i, i] = HCORE_MO[i, i]
+
+for i in range(NUM):
+    for b in range(int(NUM/2)):
+        print(f'sigma{i+1} =  h{i+1}{i+1} + 2J{i+1}{b+1} - K{i+1}{b+1}')
+        FOCK_MO[i, i] += 2*TWO_ELEC_MO[i, b, i, b] - TWO_ELEC_MO[i, b, b, i]
+
+print(FOCK_MO)
+pyscf_mo_energy = rhf.mo_energy
+calc_mo_energy = np.linalg.eigvalsh(FOCK_MO)
+
+print(pyscf_mo_energy)
+print(calc_mo_energy)
+
+print(TWO_ELEC_MO)
+
+occ = rhf.mo_occ
+print(occ)
+
+#%%
+import json
+import numpy as np
+from pyscf import gto, scf
+from pyscf import cc
+
+with open('data/H2_exact_PES.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+for key, value in data.items():
+    mol = gto.M(atom = f'H 0 0 0; H 0 0 {key}', basis = 'sto-3g', spin=2)
+    mf = scf.UHF(mol)
+    mf.kernel()
+    ccsd = cc.CCSD(mf)
+    e = ccsd.kernel()
+    # total_e = mf.e_tot + e[0]
+    total_e = mf.e_tot
+    data[key].insert(1, total_e)
+    print(f'\nBond Length: {key}')
+    print('Energy:')
+    print(data[key])
+
+with open('data/H2_hf_PES.json', 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=4)

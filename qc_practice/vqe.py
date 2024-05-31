@@ -5,7 +5,7 @@ from qiskit_aer import AerProvider
 from qc_practice import JordanWignerMapper
 
 class VQE:
-    def __init__(self, mol):
+    def __init__(self, mol, verbose=1):
         self.mol = mol
         rhf = scf.RHF(self.mol)
         rhf.verbose = 0
@@ -21,16 +21,16 @@ class VQE:
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((self._num, self._num, self._num, self._num))
 
-        self.verbose = False
+        self.verbose = verbose
         self._shots = None
         self._iterations = 0
 
-        print('Computing Hamiltonian...... ', end='')
+        self._talk('Computing Hamiltonian...... ', end='')
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
-        print('Done')
+        self._talk('Done')
         total_energy = rhf.energy_elec()[0] + self.nuclear_repulsion
-        print(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}')
-        print(f'SCF Total Energy:      {total_energy:18.15f}\n')
+        self._talk(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}')
+        self._talk(f'SCF Total Energy:      {total_energy:18.15f}\n')
 
     def uccsd_ansatz(self, coeff):
         uccsd_fermion = ''
@@ -142,7 +142,7 @@ class VQE:
 
             if all(p.symbol == 'I' for p in p_string.values()):
                 energy += values.real
-                # print(f'Expectation: {values.real:18.15f} {p_string}')
+                self._talk(f'Expectation: {values.real:18.15f} {p_string}', verb=2)
                 continue
 
             backend = AerProvider().get_backend('qasm_simulator')
@@ -154,43 +154,42 @@ class VQE:
 
             expectation = counts/self._shots * values.real
 
-            # print(f'Expectation: {expectation:18.15f} {p_string}')
+            self._talk(f'Expectation: {expectation:18.15f} {p_string}', verb=2)
             energy += expectation
         return energy
 
     def _batch(self, coeff):
         self._iterations += 1
-        print(f'Iteration: {self._iterations}')
-        print('Computing uccsd ansatz..... ', end='')
+        self._talk(f'Iteration: {self._iterations}')
+        self._talk('Computing uccsd ansatz..... ', end='')
         uccsd_ansatz = self.uccsd_ansatz(coeff)
-        print('Done')
+        self._talk('Done')
 
-        print('Building quantum circuit... ', end='')
+        self._talk('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self._num, 2*self._num)
         self._initialize(qc)
         self._circuit(qc, uccsd_ansatz)
-        print('Done')
+        self._talk('Done')
 
-        print('Measuring energy........... ', end='')
+        self._talk('Measuring energy........... ', end='')
         energy = self._measure(qc)
-        print('Done')
+        self._talk('Done')
 
-        if self.verbose:
-            print('coeff: ', end='')
-            print([f'{val:9.6f}' for val in coeff])
-        print(f'Electronic energy: {energy:18.15f}\n')
+        self._talk('coeff: ', end='', verb=2)
+        self._talk([f'{val:9.6f}' for val in coeff], verb=2)
+        self._talk(f'Electronic energy: {energy:18.15f}\n')
         return energy
 
     def run(self, shots=10000):
-        print('Running VQE\n')
+        self._talk('Running VQE\n')
         n = self._num
         self._shots = shots
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
         total_energy = optimized_energy.fun + self.nuclear_repulsion
-        print(f'Nuclear Repulsion Energy   : {self.nuclear_repulsion:18.15f}')
-        print(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
-        print(f'Total Energy: {total_energy:18.15f}')
+        self._talk(f'Nuclear Repulsion Energy   : {self.nuclear_repulsion:18.15f}')
+        self._talk(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
+        self._talk(f'Total Energy: {total_energy:18.15f}')
         return total_energy, optimized_energy.x
 
     def run_hf(self, shots=10000):
@@ -200,10 +199,14 @@ class VQE:
             qc.x(qubit)
             qc.x(qubit+self._num)
 
-        print('Measuring energy... ', end='')
+        self._talk('Measuring energy... ', end='')
         energy = self._measure(qc)
-        print('Done')
+        self._talk('Done')
 
         total_energy = energy + self.nuclear_repulsion
-        print(f'Optimized Electronic Energy: {total_energy:18.15f}')
+        self._talk(f'Optimized Electronic Energy: {total_energy:18.15f}', 1)
         return total_energy
+
+    def _talk(self, line, end='\n', verb=1):
+        if verb == self.verbose:
+            print(line, end=end)
