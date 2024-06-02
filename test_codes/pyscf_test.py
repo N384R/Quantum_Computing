@@ -165,12 +165,12 @@ for key, value in data.items():
     mf.kernel()
     ccsd = cc.CCSD(mf)
     e = ccsd.kernel()
-    # total_e = mf.e_tot + e[0]
-    total_e = mf.e_tot
+    total_e = mf.e_tot + e[0]
+    # total_e = mf.e_tot
     data[key].insert(1, total_e)
     print(f'\nBond Length: {key}')
     print('Energy:')
     print(data[key])
 
-with open('data/H2_hf_PES.json', 'w', encoding='utf-8') as f:
+with open('data/H2_exact_PES.json', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=4)

@@ -15,20 +15,20 @@ class VQE:
         hcore_mo = c.T @ hcore @ c
         self._num = hcore.shape[0]
         self._num_elec = self.mol.nelectron
-        self.nuclear_repulsion = self.mol.energy_nuc()
         two_elec = self.mol.intor('int2e')
         # TWO_ELEC_MO = np.einsum('pi,qj,rk,sl,ijkl->pqrs', C, C, C, C, mol.intor('int2e'))
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((self._num, self._num, self._num, self._num))
 
         self.verbose = verbose
+        self.just_hf = False
         self._shots = None
         self._iterations = 0
 
         self._talk('Computing Hamiltonian...... ', end='')
         self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
         self._talk('Done')
-        total_energy = rhf.energy_elec()[0] + self.nuclear_repulsion
+        total_energy = rhf.energy_elec()[0] + self.mol.energy_nuc()
         self._talk(f'SCF Electronic Energy: {rhf.energy_elec()[0]:18.15f}')
         self._talk(f'SCF Total Energy:      {total_energy:18.15f}\n')
 
@@ -168,7 +168,8 @@ class VQE:
         self._talk('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self._num, 2*self._num)
         self._initialize(qc)
-        self._circuit(qc, uccsd_ansatz)
+        if not self.just_hf:
+            self._circuit(qc, uccsd_ansatz)
         self._talk('Done')
 
         self._talk('Measuring energy........... ', end='')
@@ -184,28 +185,14 @@ class VQE:
         self._talk('Running VQE\n')
         n = self._num
         self._shots = shots
+        nucl_rep = self.mol.energy_nuc()
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized_energy = opt.minimize(self._batch, coeff, method='Powell')
-        total_energy = optimized_energy.fun + self.nuclear_repulsion
-        self._talk(f'Nuclear Repulsion Energy   : {self.nuclear_repulsion:18.15f}')
+        total_energy = optimized_energy.fun + nucl_rep
+        self._talk(f'Nuclear Repulsion Energy   : {nucl_rep:18.15f}')
         self._talk(f'Optimized Electronic Energy: {optimized_energy.fun:18.15f}\n')
         self._talk(f'Total Energy: {total_energy:18.15f}')
         return total_energy, optimized_energy.x
-
-    def run_hf(self, shots=10000):
-        self._shots = shots
-        qc = QuantumCircuit(2*self._num, 2*self._num)
-        for qubit in range(self._num_elec//2):
-            qc.x(qubit)
-            qc.x(qubit+self._num)
-
-        self._talk('Measuring energy... ', end='')
-        energy = self._measure(qc)
-        self._talk('Done')
-
-        total_energy = energy + self.nuclear_repulsion
-        self._talk(f'Optimized Electronic Energy: {total_energy:18.15f}', 1)
-        return total_energy
 
     def _talk(self, line, end='\n', verb=1):
         if verb == self.verbose:

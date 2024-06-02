@@ -22,10 +22,7 @@ class SSVQE(VQE):
         else:
             self.weights = weights
 
-    def _batch(self, coeff):
-        uccsd_ansatz = self.uccsd_ansatz(coeff)
-        qc = QuantumCircuit(2*self._num, 2*self._num)
-        self._initialize(qc)
+    def _swap_init(self, qc):
         N = self._num
         CN = ceil(N/3)
         if self._current_state != 0:
@@ -37,7 +34,13 @@ class SSVQE(VQE):
                 qc.swap(N//2-1, N//2 - 1 + CN)
                 qc.swap(N, N + CN)
 
-        self._circuit(qc, uccsd_ansatz)
+    def _batch(self, coeff):
+        uccsd_ansatz = self.uccsd_ansatz(coeff)
+        qc = QuantumCircuit(2*self._num, 2*self._num)
+        self._initialize(qc)
+        self._swap_init(qc)
+        if not self.just_hf:
+            self._circuit(qc, uccsd_ansatz)
         energy = self._measure(qc)
 
         if self._current_state % 3 == 0:
@@ -54,7 +57,7 @@ class SSVQE(VQE):
             self._iterations = 0
             self._current_state = i
             state_energy = self._batch(coeff)
-            self._talk(f'State_{i} Energy: {state_energy + self.nuclear_repulsion:18.15f}')
+            self._talk(f'State_{i} Energy: {state_energy + self._nucl_rep:18.15f}')
             self.state_energies.append(state_energy)
         weighted_energy = sum(self.weights[i] * self.state_energies[i] for i in range(self.nroots))
 
@@ -70,8 +73,8 @@ class SSVQE(VQE):
         opt.minimize(self._ssvqe_batch, coeff, method='Powell')
         self._talk('\nFinal Excited State Energies:')
         for i in range(self.nroots):
-            self.state_energies[i] = self.state_energies[i] + self.nuclear_repulsion
-            self._talk(f'State_{i} Energy: {self.state_energies[i]:18.15f}', end='\n' if i == 0 else '  ')
+            self.state_energies[i] = self.state_energies[i] + self._nucl_rep
+            self._talk(f'State_{i} Energy: {self.state_energies[i]:18.15f}', end='\n' if i == 0 else '')
             if i !=0:
                 energy_diff = self.state_energies[i] - self.state_energies[0]
                 self._talk(f'Excitation energy: {energy_diff:18.15f}')
