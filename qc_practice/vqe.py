@@ -2,11 +2,12 @@ from pyscf import scf, ao2mo
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
-from mapper import JordanWignerMapper
-from . import Profile
+from qc_practice.mapper.jordan_wigner import JordanWignerMapper
+from qc_practice.ansatz.uccsd import UCCSD
+from .profile import Profile
 
 class VQE:
-    def __init__(self, mol, verbose=1):
+    def __init__(self, mol, ansatz=UCCSD(), verbose=1):
         self.mol = mol
         self.profile = Profile()
 
@@ -22,6 +23,8 @@ class VQE:
         self._talk(f'SCF Electronic Energy: {self.profile.energy_elec:18.15f}')
         self._talk(f'SCF Total Energy:      {self.profile.energy_total():18.15f}\n')
 
+        self.ansatz = ansatz.ansatz
+
     def _initialize_profile(self):
         rhf = scf.RHF(self.mol)
         rhf.verbose = 0
@@ -31,76 +34,47 @@ class VQE:
         hcore_mo = c.T @ hcore @ c
         self.profile.num_orb = hcore.shape[0]
         self.profile.num_elec = self.mol.nelectron
-        N = self.profile.num_orb
+        n = self.profile.num_orb
 
         two_elec = self.mol.intor('int2e')
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
-        two_elec_mo = two_elec_mo.reshape((N, N, N, N))
+        two_elec_mo = two_elec_mo.reshape((n, n, n, n))
 
-        self.hamiltonian_pauli = self.hamiltonian(hcore_mo, two_elec_mo)
+        self.hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
         self.profile.energy_elec = rhf.energy_elec()[0]
         self.profile.energy_nucl = self.mol.energy_nuc()
 
-    def uccsd_ansatz(self, coeff):
-        uccsd_fermion = ''
-        N = self.profile.num_orb
-        value = iter(coeff)
-        for i in range(N//2):
-            for j in range(N//2, N):
-                val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i} ' + '\n'
-                val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i+N}^ {j+N} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j+N}^ {i+N} ' + '\n'
-
-        for i in range(N//2):
-            for j in range(N//2):
-                for k in range(N//2, N):
-                    for l in range(N//2, N):
-                        val = next(value)
-                        sign = '+' if val > 0 else '-'
-                        uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+N}^ {k} {l+N} ' + '\n'
-                        sign = '-' if val > 0 else '+'
-                        uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+N}^ {i} {j+N} ' + '\n'
-
-        return JordanWignerMapper(uccsd_fermion)
-
-    def hamiltonian(self, hcore_mo, two_elec_mo):
+    def _hamiltonian(self, hcore_mo, two_elec_mo):
         second_q = ''
-        N = self.profile.num_orb
-        for i in range(N):
+        n = self.profile.num_orb
+        for i in range(n):
             coeff = hcore_mo[i, i]
             sign = '+' if coeff > 0 else ''
             second_q += f'{sign} {coeff:.16f} {i}^ {i}' + '\n'
-            second_q += f'{sign} {coeff:.16f} {i+N}^ {i+N}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i+n}^ {i+n}' + '\n'
 
-        for i in range(N):
-            for j in range(N):
-                for k in range(N):
-                    for l in range(N):
+        for i in range(n):
+            for j in range(n):
+                for k in range(n):
+                    for l in range(n):
                         coeff = two_elec_mo[i, j, k, l]/2
                         if coeff < 1e-10:
                             continue
                         sign = '+' if coeff > 0 else ''
                         second_q += f'{sign} {coeff:.16f} {i}^ {k}^ {l} {j}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i}^ {k+N}^ {l+N} {j}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i+N}^ {k}^ {l} {j+N}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i+N}^ {k+N}^ {l+N} {j+N}' + '\n'
+                        second_q += f'{sign} {coeff:.16f} {i}^ {k+n}^ {l+n} {j}' + '\n'
+                        second_q += f'{sign} {coeff:.16f} {i+n}^ {k}^ {l} {j+n}' + '\n'
+                        second_q += f'{sign} {coeff:.16f} {i+n}^ {k+n}^ {l+n} {j+n}' + '\n'
 
         return JordanWignerMapper(second_q)
 
-    def _initialize(self, qc):
+    def _initialize_circuit(self, qc):
         for qubit in range(self.profile.num_elec//2):
             qc.x(qubit)
             qc.x(qubit+self.profile.num_orb)
 
-    def _circuit(self, qc, uccsd_ansatz):
-        for p_string, values in uccsd_ansatz.items():
+    def _circuit(self, qc, ansatz):
+        for p_string, values in ansatz.items():
             chk = []
             for idx, p in p_string.items():
                 if p.symbol == 'X':
@@ -171,14 +145,14 @@ class VQE:
         self._iterations += 1
         self._talk(f'Iteration: {self._iterations}')
         self._talk('Computing uccsd ansatz..... ', end='')
-        uccsd_ansatz = self.uccsd_ansatz(coeff)
+        ansatz = self.ansatz(coeff, self.profile)
         self._talk('Done')
 
         self._talk('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self.profile.num_orb, 2*self.profile.num_orb)
-        self._initialize(qc)
+        self._initialize_circuit(qc)
         if not self.just_hf:
-            self._circuit(qc, uccsd_ansatz)
+            self._circuit(qc, ansatz)
         self.profile.circuit = qc
         self._talk('Done')
 
@@ -192,23 +166,30 @@ class VQE:
         return energy
 
     def run(self, shots=10000):
-        self._talk('Running VQE\n')
+        self._talk('Starting VQE Optimization... ')
         n = self.profile.num_orb
         self._shots = shots
         coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
         optimized = opt.minimize(self._batch, coeff, method='Powell')
+        self._talk('\n!!Successfully Converged!!')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x
+
+        self.profile.spin = self._measure_spin(self.profile.circuit)
+
         self._talk(f'Nuclear Repulsion Energy   : {self.profile.energy_nucl:18.15f}')
         self._talk(f'Optimized Electronic Energy: {self.profile.energy_elec:18.15f}\n')
-        self._talk(f'Total Energy: {self.profile.energy_total():18.15f}')
-        return self.profile.energy_total(), self.profile.coeff
+        self._talk(f'Total Energy        : {self.profile.energy_total():18.15f}')
+        self._talk(f'Coefficients        : {self.profile.coeff}')
+        self._talk(f'Multiplicity (2S+1) : {self.profile.spin:.02f}')
+
+        return self.profile
 
     def _talk(self, line, end='\n', verb=1):
         if verb == self.verbose:
             print(line, end=end)
 
-    def spin(self, qc):
+    def _measure_spin(self, qc):
         for k in range(self.profile.num_orb * 2):
             qc.measure(k, k)
 

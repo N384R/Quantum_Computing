@@ -1,82 +1,100 @@
-from math import ceil
-from pyscf import scf, ao2mo
+from itertools import combinations
 import scipy.optimize as opt
-from qiskit import QuantumCircuit
-from qiskit_aer import AerProvider
-from qc_practice import JordanWignerMapper
 from qc_practice import VQE
+from qc_practice.profile import Profiles
+from qc_practice.ansatz.uccsd import UCCSD
 
 class SSVQE(VQE):
-    def __init__(self, mol, nroots = 2, weights = None):
+    def __init__(self, mol, ansatz=UCCSD(), active_space = None, weights = None, verbose=1):
         self.mol = mol
-        self.verbose = 1
-        self.nroots = nroots * 2
-        self.state_energies = []
-        self._current_state = None
+        self._profiles = Profiles()
+
+        self.verbose = verbose
+        self._transition = None
         self._trial = 0
+
+        if active_space is None:
+            self.active_space = [1, 1]
+        else:
+            self.active_space = active_space
+        k = self.active_space
+        self._nspace = (k[0] * k[1] * 4) + (k[0] * (2 * k[0] - 1)) * (k[1] * (2 * k[1] - 1))
 
         if weights is None:
             self.weights = [1]
-            for i in range(1, self.nroots):
-                self.weights.append(self.weights[i-1] / 4)
+            for i in range(1, self._nspace+1):
+                self.weights.append(self.weights[i-1] / 2)
         else:
             self.weights = weights
 
-    def _swap_init(self, qc):
-        N = self._num
-        CN = ceil(N/3)
-        if self._current_state != 0:
-            if self._current_state % 3 == 1:
-                qc.swap(N//2-1, N + CN)
-            elif self._current_state % 3 == 2:
-                qc.swap(N//2-1, N//2 - 1 + CN)
-            else:
-                qc.swap(N//2-1, N//2 - 1 + CN)
-                qc.swap(N, N + CN)
+        super().__init__(mol)
+        if sum([*self.active_space]) > self.profile.num_orb:
+            raise ValueError('Active space is larger than number of orbitals')
 
-    def _batch(self, coeff):
-        uccsd_ansatz = self.uccsd_ansatz(coeff)
-        qc = QuantumCircuit(2*self._num, 2*self._num)
-        self._initialize(qc)
-        self._swap_init(qc)
-        if not self.just_hf:
-            self._circuit(qc, uccsd_ansatz)
-        energy = self._measure(qc)
+    def _electron_excitation(self, active_space):
+        n = self.profile.num_orb - active_space[0] - 1
+        occ, vir = active_space
+        orbital_indices = list(range((occ + vir)*2))
+        alpha_indices = orbital_indices[:(occ+vir)]
+        beta_indices = orbital_indices[(occ+vir):]
+        occ_indices = alpha_indices[:occ] + beta_indices[:occ]
+        vir_indices = alpha_indices[occ:] + beta_indices[occ:]
 
-        if self._current_state % 3 == 0:
-            self._talk('coeff: ', end='', verb=2)
-            self._talk([f'{val:9.6f}' for val in coeff], verb=2)
+        for i in occ_indices:
+            for j in vir_indices:
+                yield (i+n, j+n)
 
-        return energy
+        for i in combinations(occ_indices, 2):
+            for j in combinations(vir_indices, 2):
+                k = (i[0] + n, i[1] + n)
+                l = (j[0] + n, j[1] + n)
+                yield (k, l)
+
+    def _swap_init(self, qc, state):
+        state = next(self._transition)
+        qc.swap(state[0], state[1])
+        print(state)
+
+    def _initialize_circuit(self, qc):
+        super()._initialize_circuit(qc)
+        if self.profile.state != 0:
+            self._swap_init(qc, self.profile.state)
 
     def _ssvqe_batch(self, coeff):
         self._trial += 1
-        self.state_energies = []
-        self._talk(f'\nTrial: {self._trial}')
-        for i in range(self.nroots):
-            self._iterations = 0
-            self._current_state = i
-            state_energy = self._batch(coeff)
-            self._talk(f'State_{i} Energy: {state_energy + self._nucl_rep:18.15f}')
-            self.state_energies.append(state_energy)
-        weighted_energy = sum(self.weights[i] * self.state_energies[i] for i in range(self.nroots))
+        self._talk(f'\nIteration: {self._trial}')
+        self._transition = self._electron_excitation(self.active_space)
+        for i in range(self._nspace+1):
+            self.profile.state = i
+            self._profiles[i].state = i
+            self.verbose, verbose = 0, self.verbose
+            self._profiles[i].energy_elec = self._batch(coeff)
+            self._profiles[i].circuit = self.profile.circuit
+            self.verbose = verbose
+            self._talk(f'State_{i} Energy: {self._profiles[i].energy_total():18.15f}')
+        if self._trial == 1:
+            indices = sorted(range(len(self._profiles)), key = lambda x: self._profiles[x].energy_elec)
+            self.weights = [self.weights[i] for i in indices]
+        weighted_energy = sum(self.weights[i] * self._profiles[i].energy_elec for i in range(self._nspace+1))
 
         return weighted_energy
 
     def run(self, shots=10000):
-        super().__init__(self.mol, verbose=self.verbose)
-        self._talk('Running SSVQE')
-        n = self._num
+        self._talk('\nStarting SSVQE Calculation')
+        self._profiles.add(self.profile, self._nspace+1)
+        n = self.profile.num_orb
         self._shots = shots
-        count = (2 * (n//2) ** 2) + 2 * (n//2 * (n//2 - 1) // 2) ** 2 + (n//2) ** 4
-        coeff = [1e-5] * count
-        opt.minimize(self._ssvqe_batch, coeff, method='Powell')
+        coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
+        optimized = opt.minimize(self._ssvqe_batch, coeff, method='Powell')
+        self._talk('\n!!Successfully Converged!!')
+        self.profile.coeff = optimized.x
+        self.profile = self._profiles_update()
         self._talk('\nFinal Excited State Energies:')
-        for i in range(self.nroots):
-            self.state_energies[i] = self.state_energies[i] + self._nucl_rep
-            self._talk(f'State_{i} Energy: {self.state_energies[i]:18.15f}', end='\n' if i == 0 else '')
-            if i !=0:
-                energy_diff = self.state_energies[i] - self.state_energies[0]
-                self._talk(f'Excitation energy: {energy_diff:18.15f}')
+        for i in range(self._nspace+1):
+            self._talk(f'State_{i} Energy: {self._profiles[i].energy_total():18.15f}')
 
-        return self.state_energies
+    def _profiles_update(self):
+        for i in range(self._nspace+1):
+            self._profiles[i].coeff = self.profile.coeff
+            self._profiles[i].spin = self._measure_spin(self._profiles[i].circuit)
+        return self._profiles

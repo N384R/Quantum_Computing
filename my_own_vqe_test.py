@@ -9,18 +9,20 @@ vqe.run()
 #%%
 from pyscf import gto
 from qc_practice import VQE
+from qc_practice.ansatz import UCCSD
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
-vqe = VQE(mol)
+vqe = VQE(mol, UCCSD())
 vqe.run()
 
 #%%
 
 from pyscf import gto
 from qc_practice import SSVQE
+from qc_practice.ansatz import UCCSD
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
-ssvqe = SSVQE(mol)
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = '4-31g')
+ssvqe = SSVQE(mol, ansatz=UCCSD())
 ssvqe.run()
 
 #%%
@@ -33,13 +35,13 @@ from qc_practice import VQE
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
 
-vqe = VQE(mol, verbose=0)
+vqe = VQE(mol)
 e, coeff = vqe.run()
 print(e, coeff)
 
 for i in range(5):
     qc = QuantumCircuit(4, 4)
-    vqe._initialize(qc)
+    vqe._initialize_circuit(qc)
 
     if i == 0:
         print('\nSinglet configuration 0110')

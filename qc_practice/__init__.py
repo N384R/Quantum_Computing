@@ -2,4 +2,3 @@
 
 from .vqe import VQE
 from .ssvqe import SSVQE
-from .profile import Profile
