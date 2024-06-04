@@ -17,13 +17,14 @@ vqe.run()
 
 #%%
 
-from pyscf import gto, scf
+from pyscf import gto
 from qc_practice import SSVQE
-from qc_practice.ansatz import UCCSD
+from qc_practice.ansatz import UCCSD, SpinFlipUCCSD
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
-ssvqe = SSVQE(mol, ansatz=UCCSD())
-ssvqe.kookmans = True
+mol = gto.M(atom = 'H 0 0 0; H 0 0 1.90', basis = 'sto3-g')
+ssvqe = SSVQE(mol)
+ssvqe.weights = [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+ssvqe.ansatz = SpinFlipUCCSD()
 ssvqe.run()
 
 #%%
@@ -31,12 +32,12 @@ ssvqe.run()
 from pyscf import gto
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
-from qc_practice import VQE
+from qc_practice import self
 
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
 
-vqe = VQE(mol)
+vqe = self(mol)
 e, coeff = vqe.run()
 print(e, coeff)
 

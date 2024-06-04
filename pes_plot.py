@@ -5,14 +5,11 @@ import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots()
 
-with open('data/H2_vqe_sto3g_PES.json', 'r', encoding='utf-8') as f:
+with open('data/H2_sfuccsd_sto3g_PES.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
     data_np = np.array(list(data.values()))
     x = np.array(list(data.keys()), dtype=float)
     for i in range(data_np.shape[1]):
-        if i == 2:
-            a = ax.scatter(x, data_np[:, i] * 2 - data_np[:, 1], color='red')
-            continue
         a = ax.scatter(x, data_np[:, i], color='red')
     a.set_label('VQE (UCCSD)')
 
@@ -38,4 +35,4 @@ with open('data/H2_exact_PES.json', 'r', encoding='utf-8') as f:
 plt.xlabel('Bond Length')
 plt.ylabel('Energy')
 plt.legend()
-# plt.savefig('figures/H2_total_modified_PES.png')
+plt.savefig('figures/H2_total_modified_PES.png')

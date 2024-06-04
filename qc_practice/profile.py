@@ -70,5 +70,8 @@ class Profiles:
     def show(self):
         return [profile.show() for profile in self.profiles]
 
+    def energy_total(self):
+        return [profile.energy_total() for profile in self.profiles]
+
     def __repr__(self):
         return f'{self.profiles}'

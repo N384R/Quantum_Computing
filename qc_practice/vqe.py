@@ -1,21 +1,43 @@
+'''
+This module contains the implementation of the SSVQE class. 
+The class is initialized with the molecule and the ansatz to be used.
+
+The class has the following methods:
+
+__init__: Initializes the VQE class with the molecule and the ansatz to be used.
+_initialize_profile: Initializes the profile with the Hamiltonian and the electronic energy.
+_hamiltonian: Generates the Hamiltonian in the Pauli basis.
+_initialize_circuit: Initializes the quantum circuit for the calculation.
+_circuit: Builds the quantum circuit for the calculation.
+_measure: Measures the energy of the quantum circuit.
+_batch: Performs the VQE calculation for a given set of coefficients.
+run: Runs the VQE optimization.
+_talk: Prints the output based on the verbosity level.
+_measure_spin: Measures the spin of the quantum circuit.
+'''
+
 from pyscf import scf, ao2mo
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
 from qc_practice.mapper.jordan_wigner import JordanWignerMapper
-from qc_practice.ansatz.uccsd import UCCSD
 from .profile import Profile
 
 class VQE:
-    def __init__(self, mol, ansatz=UCCSD(), verbose=1):
-        self.mol = mol
-        self.profile = Profile()
+    'Class for running Variational Quantum Eigensolver (VQE) on a given molecule.'
 
+    def __init__(self, mol, ansatz=None, verbose=1):
+        self.mol = mol
+        self.ansatz = ansatz
+        self.profile = Profile()
         self.verbose = verbose
         self.just_hf = False
         self._shots = None
-        self._iterations = 0
 
+        self.__iteration = 0
+        self.__hamiltonian_pauli = None
+
+    def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
         self._initialize_profile()
         self._talk('Done')
@@ -23,7 +45,8 @@ class VQE:
         self._talk(f'SCF Electronic Energy: {self.profile.energy_elec:18.15f}')
         self._talk(f'SCF Total Energy:      {self.profile.energy_total():18.15f}\n')
 
-        self.ansatz = ansatz.ansatz
+        if not self.ansatz:
+            raise ValueError('Please provide an ansatz for the calculation.')
 
     def _initialize_profile(self):
         rhf = scf.RHF(self.mol)
@@ -40,7 +63,7 @@ class VQE:
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((n, n, n, n))
 
-        self._hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
+        self.__hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
         self.profile.energy_elec = rhf.energy_elec()[0]
         self.profile.energy_nucl = self.mol.energy_nuc()
 
@@ -107,7 +130,7 @@ class VQE:
 
     def _measure(self, qc):
         energy = 0.
-        for p_string, values in self._hamiltonian_pauli.items():
+        for p_string, values in self.__hamiltonian_pauli.items():
             qc_2 = qc.copy()
             for idx, p in p_string.items():
                 if p.symbol == 'X':
@@ -142,10 +165,10 @@ class VQE:
         return energy
 
     def _batch(self, coeff):
-        self._iterations += 1
-        self._talk(f'Iteration: {self._iterations}')
+        self.__iteration += 1
+        self._talk(f"Iteration: {self.__iteration}")
         self._talk('Computing uccsd ansatz..... ', end='')
-        ansatz = self.ansatz(coeff, self.profile)
+        ansatz = self.ansatz.ansatz(self.profile, coeff)
         self._talk('Done')
 
         self._talk('Building quantum circuit... ', end='')
@@ -166,12 +189,14 @@ class VQE:
         return energy
 
     def run(self, shots=10000):
+        'Run the VQE optimization'
+        self._init_setup()
         self._talk('Starting VQE Optimization... ')
-        n = self.profile.num_orb
+
         self._shots = shots
-        coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
+        coeff = self.ansatz.generate_coeff(self.profile)
         optimized = opt.minimize(self._batch, coeff, method='Powell')
-        self._talk('\n!!Successfully Converged!!')
+        self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x
 
@@ -195,7 +220,7 @@ class VQE:
 
         backend = AerProvider().get_backend('qasm_simulator')
         result = backend.run(qc, shots=self._shots).result().get_counts()
-
+        print(result)
         spin = 0
         for key, value in result.items():
             for i, orb in enumerate(reversed([*key])):

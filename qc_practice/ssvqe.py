@@ -1,38 +1,59 @@
+'''
+This module contains the implementation of the SSVQE class.
+The class is used to calculate the excited state energies of a molecule using the SSVQE algorithm.
+
+The class has the following methods:
+
+__init__: Initializes the SSVQE class with the molecule and the ansatz to be used.
+_init_setup: Initializes the active space and the weights to be used in the calculation.
+_electron_excitation: Generates the electron excitation operators for the active space.
+_swap_init: Swaps the qubits in the circuit to prepare the initial state for the calculation.
+_initialize_circuit: Initializes the quantum circuit for the calculation.
+_ssvqe_batch: Performs the SSVQE calculation for a given set of coefficients.
+run: Runs the SSVQE calculation.
+_profiles_update: Updates the profiles with the calculated energies.
+'''
+
 from itertools import combinations
 import scipy.optimize as opt
 from qc_practice import VQE
 from qc_practice.profile import Profiles
-from qc_practice.ansatz.uccsd import UCCSD
 
 class SSVQE(VQE):
-    def __init__(self, mol, ansatz=UCCSD(), active_space = None, weights = None, koopmans=False, verbose=1):
-        self.mol = mol
-        self._profiles = Profiles()
+    '''
+    Class for running Subspace-Search Variational Quantum Eigensolver (SSVQE) on a given molecule.
+    '''
+    def __init__(self, mol, ansatz=None, **kwargs):
+        super().__init__(mol, ansatz=ansatz)
 
-        self.verbose = verbose
-        self._transition = None
-        self.koopmans = koopmans
-        self._trial = 0
+        self.active_space = kwargs.get('active_space', None)
+        self.weights = kwargs.get('weights', None)
+        self.koopmans = kwargs.get('koopmans', False)
+        self.verbose = kwargs.get('verbose', 1)
 
-        if active_space is None:
+        self.__p = Profiles()
+        self.__nspace = None
+        self.__transition = None
+        self.__trial = 0
+
+    def _init_setup(self):
+        super()._init_setup()
+
+        if self.active_space is None:
             self.active_space = [1, 1]
-        else:
-            self.active_space = active_space
+
         k = self.active_space
-        self._nspace = k[0] * k[1] * 4
-        if not koopmans:
-            self._nspace += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
+        if ((k[1] > self.profile.num_orb/2) or (k[0] > self.profile.num_elec/2)):
+            raise ValueError('Invalid active space. Please check the basis.')
 
-        if weights is None:
+        self.__nspace = k[0] * k[1] * 4
+        if not self.koopmans:
+            self.__nspace += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
+
+        if not self.weights:
             self.weights = [1]
-            for i in range(1, self._nspace+1):
-                self.weights.append(self.weights[i-1] / 2)
-        else:
-            self.weights = weights
-
-        super().__init__(mol)
-        if sum([*self.active_space]) > self.profile.num_orb:
-            raise ValueError('Active space is larger than number of orbitals')
+            for i in range(1, self.__nspace+1):
+                self.weights.append(self.weights[i-1] / 4)
 
     def _electron_excitation(self, active_space):
         n = self.profile.num_elec//2 - active_space[0]
@@ -55,9 +76,8 @@ class SSVQE(VQE):
                     yield (k, l)
 
     def _swap_init(self, qc, state):
-        state = next(self._transition)
+        state = next(self.__transition)
         qc.swap(state[0], state[1])
-        print(f'Swapping {state[0]} and {state[1]}')
 
     def _initialize_circuit(self, qc):
         super()._initialize_circuit(qc)
@@ -65,40 +85,42 @@ class SSVQE(VQE):
             self._swap_init(qc, self.profile.state)
 
     def _ssvqe_batch(self, coeff):
-        self._trial += 1
-        self._talk(f'\nIteration: {self._trial}')
-        self._transition = self._electron_excitation(self.active_space)
-        for i in range(self._nspace+1):
+        self.__trial += 1
+        self._talk(f"\nIteration: {self.__trial}")
+        self.__transition = self._electron_excitation(self.active_space)
+        for i in range(self.__nspace+1):
             self.profile.state = i
-            self._profiles[i].state = i
+            self.__p[i].state = i
             self.verbose, verbose = 0, self.verbose
-            self._profiles[i].energy_elec = self._batch(coeff)
-            self._profiles[i].circuit = self.profile.circuit
+            self.__p[i].energy_elec = self._batch(coeff)
+            self.__p[i].circuit = self.profile.circuit
             self.verbose = verbose
-            self._talk(f'State_{i} Energy: {self._profiles[i].energy_total():18.15f}')
-        if self._trial == 1:
-            indices = sorted(range(len(self._profiles)), key = lambda x: self._profiles[x].energy_elec)
-            self.weights = [self.weights[i] for i in indices]
-        weighted_energy = sum(self.weights[i] * self._profiles[i].energy_elec for i in range(self._nspace+1))
+            self._talk(f'State_{i} Energy: {self.__p[i].energy_total():18.15f}')
+        if self.__trial in (1, 50):
+            en_list = [self.__p[i].energy_total() for i in range(1, self.__nspace+1)]
+            indices = sorted(range(1, self.__nspace+1), key=lambda i: en_list[i-1])
+            self.weights = [self.weights[0]] + [self.weights[i] for i in indices]
+        weight_en = sum(self.weights[i] * self.__p[i].energy_elec for i in range(self.__nspace+1))
 
-        return weighted_energy
+        return weight_en
 
-    def run(self, shots=10000):
+    def run(self, shots=100000):
+        self._init_setup()
         self._talk('\nStarting SSVQE Calculation')
-        self._profiles.add(self.profile, self._nspace+1)
-        n = self.profile.num_orb
+        self.__p.add(self.profile, self.__nspace+1)
         self._shots = shots
-        coeff = [1e-5] * ((2 * (n//2) **2) + 2 * (n//2 * (n//2 - 1) // 2)**2 + (n//2)**4)
+        coeff = self.ansatz.generate_coeff(self.profile)
         optimized = opt.minimize(self._ssvqe_batch, coeff, method='Powell')
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
         self.profile = self._profiles_update()
         self._talk('\nFinal Excited State Energies:')
-        for i in range(self._nspace+1):
-            self._talk(f'State_{i} Energy: {self._profiles[i].energy_total():18.15f}')
+        for i in range(self.__nspace+1):
+            self._talk(f'State_{i} Energy: {self.__p[i].energy_total():18.15f}')
+        return self.profile.energy_total()
 
     def _profiles_update(self):
-        for i in range(self._nspace+1):
-            self._profiles[i].coeff = self.profile.coeff
-            self._profiles[i].spin = self._measure_spin(self._profiles[i].circuit)
-        return self._profiles
+        for i in range(self.__nspace+1):
+            self.__p[i].coeff = self.profile.coeff
+            self.__p[i].spin = self._measure_spin(self.__p[i].circuit)
+        return self.__p

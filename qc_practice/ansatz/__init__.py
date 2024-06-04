@@ -1,3 +1,3 @@
 # __init__.py
 
-from .uccsd import UCCSD
+from .uccsd import UCCSD, SpinFlipUCCSD
