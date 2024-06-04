@@ -23,7 +23,7 @@ from qc_practice.ansatz import UCCSD, SpinFlipUCCSD
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 1.90', basis = 'sto3-g')
 ssvqe = SSVQE(mol)
-ssvqe.weights = [1, 0.5, 0.5, 0.5, 0.5, 0.5]
+ssvqe.weights = [1, 0.2, 0.2, 0.2, 0.05, 0.01]
 ssvqe.ansatz = SpinFlipUCCSD()
 ssvqe.run()
 

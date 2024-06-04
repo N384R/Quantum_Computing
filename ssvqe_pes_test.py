@@ -13,7 +13,7 @@ for i in bond_lengths:
     mol = gto.M(atom = f'H 0 0 0; H 0 0 {i}', basis = 'sto-3g')
     ssvqe = SSVQE(mol)
     ssvqe.ansatz = SpinFlipUCCSD()
-    ssvqe.weights = [1, 0.2, 0.2, 0.2, 0.2, 0.2]
+    ssvqe.weights = [1, 0.2, 0.2, 0.2, 0.05, 0.01]
     ssvqe.verbose = 0
     potential_energy_surface[f'{i:.02f}'] = ssvqe.run()
     print(f'\nBond Length: {i:5.2f}')
