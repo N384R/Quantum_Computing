@@ -40,7 +40,7 @@ class VQE:
         two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
         two_elec_mo = two_elec_mo.reshape((n, n, n, n))
 
-        self.hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
+        self._hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
         self.profile.energy_elec = rhf.energy_elec()[0]
         self.profile.energy_nucl = self.mol.energy_nuc()
 
@@ -107,7 +107,7 @@ class VQE:
 
     def _measure(self, qc):
         energy = 0.
-        for p_string, values in self.hamiltonian_pauli.items():
+        for p_string, values in self._hamiltonian_pauli.items():
             qc_2 = qc.copy()
             for idx, p in p_string.items():
                 if p.symbol == 'X':

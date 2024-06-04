@@ -5,12 +5,13 @@ from qc_practice.profile import Profiles
 from qc_practice.ansatz.uccsd import UCCSD
 
 class SSVQE(VQE):
-    def __init__(self, mol, ansatz=UCCSD(), active_space = None, weights = None, verbose=1):
+    def __init__(self, mol, ansatz=UCCSD(), active_space = None, weights = None, koopmans=False, verbose=1):
         self.mol = mol
         self._profiles = Profiles()
 
         self.verbose = verbose
         self._transition = None
+        self.koopmans = koopmans
         self._trial = 0
 
         if active_space is None:
@@ -18,7 +19,9 @@ class SSVQE(VQE):
         else:
             self.active_space = active_space
         k = self.active_space
-        self._nspace = (k[0] * k[1] * 4) + (k[0] * (2 * k[0] - 1)) * (k[1] * (2 * k[1] - 1))
+        self._nspace = k[0] * k[1] * 4
+        if not koopmans:
+            self._nspace += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
 
         if weights is None:
             self.weights = [1]
@@ -32,28 +35,29 @@ class SSVQE(VQE):
             raise ValueError('Active space is larger than number of orbitals')
 
     def _electron_excitation(self, active_space):
-        n = self.profile.num_orb - active_space[0] - 1
+        n = self.profile.num_elec//2 - active_space[0]
         occ, vir = active_space
-        orbital_indices = list(range((occ + vir)*2))
-        alpha_indices = orbital_indices[:(occ+vir)]
-        beta_indices = orbital_indices[(occ+vir):]
+        orbital_indices = list(range(self.profile.num_orb*2))
+        alpha_indices = orbital_indices[:self.profile.num_orb]
+        beta_indices = orbital_indices[self.profile.num_orb:]
         occ_indices = alpha_indices[:occ] + beta_indices[:occ]
-        vir_indices = alpha_indices[occ:] + beta_indices[occ:]
+        vir_indices = alpha_indices[occ:vir+1] + beta_indices[occ:vir+1]
 
         for i in occ_indices:
             for j in vir_indices:
                 yield (i+n, j+n)
 
-        for i in combinations(occ_indices, 2):
-            for j in combinations(vir_indices, 2):
-                k = (i[0] + n, i[1] + n)
-                l = (j[0] + n, j[1] + n)
-                yield (k, l)
+        if not self.koopmans:
+            for i in combinations(occ_indices, 2):
+                for j in combinations(vir_indices, 2):
+                    k = (i[0] + n, i[1] + n)
+                    l = (j[0] + n, j[1] + n)
+                    yield (k, l)
 
     def _swap_init(self, qc, state):
         state = next(self._transition)
         qc.swap(state[0], state[1])
-        print(state)
+        print(f'Swapping {state[0]} and {state[1]}')
 
     def _initialize_circuit(self, qc):
         super()._initialize_circuit(qc)

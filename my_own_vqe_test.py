@@ -17,12 +17,13 @@ vqe.run()
 
 #%%
 
-from pyscf import gto
+from pyscf import gto, scf
 from qc_practice import SSVQE
 from qc_practice.ansatz import UCCSD
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = '4-31g')
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
 ssvqe = SSVQE(mol, ansatz=UCCSD())
+ssvqe.kookmans = True
 ssvqe.run()
 
 #%%
