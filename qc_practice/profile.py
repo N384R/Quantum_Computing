@@ -1,3 +1,5 @@
+import json
+
 class Profile:
     def __init__(self):
         self.state = None
@@ -37,6 +39,10 @@ class Profile:
 
         return profile
 
+    def save(self, filename):
+        with open(filename + '.json', 'w', encoding='utf-8') as f:
+            json.dump(self.show(), f, indent=4)
+
     #Need to me modified to print currect state
     #Need to me modified to print currect state
     #Need to me modified to print currect state
@@ -64,7 +70,7 @@ class Profiles:
         return len(self.profiles)
 
     def add(self, profile, nroots):
-        for i in range(nroots):
+        for _ in range(nroots):
             self.profiles.append(profile.copy())
 
     def show(self):
@@ -72,6 +78,10 @@ class Profiles:
 
     def energy_total(self):
         return [profile.energy_total() for profile in self.profiles]
+
+    def save(self, filename):
+        with open(filename + '.json', 'w', encoding='utf-8') as f:
+            json.dump(self.show(), f, indent=4)
 
     def __repr__(self):
         return f'{self.profiles}'
