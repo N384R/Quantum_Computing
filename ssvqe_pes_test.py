@@ -7,11 +7,13 @@ from pyscf import gto
 from qc_practice import SSVQE
 from qc_practice.ansatz import SpinFlipUCCSD
 
+save_dir = '4-31g_test'
+
 def ssvqe_calc(bond_len):
     mol = gto.M(atom = f'H 0 0 0; H 0 0 {bond_len}', basis = '4-31g')
     ssvqe = SSVQE(mol)
     ssvqe.ansatz = SpinFlipUCCSD()
-    ssvqe.weights = [1, 0.5, 0.5, 0.5, 0.1, 0.01]
+    ssvqe.weights = [1, 0.1, 0.1, 0.1, 0.01, 0.001]
     ssvqe.verbose = 0
     ssvqe.run()
     return (ssvqe.profile, f'{bond_len:.02f}')
@@ -26,16 +28,16 @@ def pes_mult(bond_lens):
             energies = profile.energy_total()
             print(f'Energy: {energies}')
             surface |= {bond_len: energies}
-            profile.save(f'pes_test/H2_sto3g_{bond_len}')
+            profile.save(f'{save_dir}/H2_sto3g_{bond_len}')
     return surface
 
-bond_lengths = np.arange(0.45, 2.45, 0.1)
+bond_lengths = np.arange(0.40, 2.40, 0.1)
 pes = pes_mult(bond_lengths)
 
 plt.plot(list(pes.keys()), list(pes.values()))
 plt.xlabel('Bond Length')
 plt.ylabel('Energy')
 
-plt.savefig('4-31g_test/H2_sfuccsd_sto3g_PES.png')
-with open('4-31g_test/H2_sfuccsd_sto3g_PES.json', 'w', encoding='utf-8') as f:
+plt.savefig(f'{save_dir}/H2_sfuccsd_sto3g_PES.png')
+with open(f'{save_dir}/H2_sfuccsd_sto3g_PES.json', 'w', encoding='utf-8') as f:
     json.dump(pes, f, indent=4)
