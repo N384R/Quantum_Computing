@@ -117,7 +117,7 @@ class SSVQE(VQE):
         self._talk('\nFinal Excited State Energies:')
         for i in range(self.__nspace+1):
             self._talk(f'State_{i} Energy: {self.__p[i].energy_total():18.15f}')
-        return self.profile.energy_total()
+        return self.profile
 
     def _profiles_update(self):
         for i in range(self.__nspace+1):

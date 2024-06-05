@@ -220,7 +220,7 @@ class VQE:
 
         backend = AerProvider().get_backend('qasm_simulator')
         result = backend.run(qc, shots=self._shots).result().get_counts()
-        print(result)
+        # print(result)
         spin = 0
         for key, value in result.items():
             for i, orb in enumerate(reversed([*key])):
