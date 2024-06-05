@@ -96,10 +96,6 @@ class SSVQE(VQE):
             self.__p[i].circuit = self.profile.circuit
             self.verbose = verbose
             self._talk(f'State_{i} Energy: {self.__p[i].energy_total():18.15f}')
-        # if self.__trial in (50, 100):
-        #     en_list = [self.__p[i].energy_total() for i in range(1, self.__nspace+1)]
-        #     indices = sorted(range(1, self.__nspace+1), key=lambda i: en_list[i-1])
-        #     self.weights = [self.weights[0]] + [self.weights[i] for i in indices]
         weight_en = sum(self.weights[i] * self.__p[i].energy_elec for i in range(self.__nspace+1))
 
         return weight_en

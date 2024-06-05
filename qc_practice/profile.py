@@ -40,6 +40,8 @@ class Profile:
         return profile
 
     def save(self, filename):
+        self.coeff = self.coeff.tolist()
+        self.circuit = 'QuantumCircuit'
         with open(filename + '.json', 'w', encoding='utf-8') as f:
             json.dump(self.show(), f, indent=4)
 
@@ -80,6 +82,9 @@ class Profiles:
         return [profile.energy_total() for profile in self.profiles]
 
     def save(self, filename):
+        for i, profile in enumerate(self.profiles):
+            profile.coeff = profile.coeff.tolist()
+            profile.circuit = f'QuantumCircuit_{i}'
         with open(filename + '.json', 'w', encoding='utf-8') as f:
             json.dump(self.show(), f, indent=4)
 

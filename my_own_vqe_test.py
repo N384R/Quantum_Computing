@@ -32,59 +32,81 @@ ssvqe.run()
 from pyscf import gto
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
-from qc_practice import self
+from qc_practice import SSVQE
+from qc_practice.ansatz import SpinFlipUCCSD
 
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
 
-vqe = self(mol)
-e, coeff = vqe.run()
-print(e, coeff)
+ssvqe = SSVQE(mol)
+ssvqe.ansatz = SpinFlipUCCSD()
+ssvqe.weights = [1, 0.5, 0.5, 0.5, 0.1, 0.01]
+ssvqe.run()
 
-for i in range(5):
-    qc = QuantumCircuit(4, 4)
-    vqe._initialize_circuit(qc)
+for profile in ssvqe.profile:
+    qc = profile.circuit
+    energy = profile.energy_total()
 
-    if i == 0:
-        print('\nSinglet configuration 0110')
-        qc.swap(0, 1)
-    elif i == 1:
-        print('\nSinglet configuration 1001')
-        qc.swap(2, 3)
-    elif i == 2:
-        print('\nTriplet configuration 0011')
-        qc.swap(0, 3)
-    elif i == 3:
-        print('\nTriplet configuration 1100')
-        qc.swap(2, 1)
-    else:
-        print('\nSinglet configuration 1010')
-        qc.swap(0, 1)
-        qc.swap(2, 3)
-
-    vqe._circuit(qc, vqe.uccsd_ansatz(coeff))
-    energy = vqe._measure(qc) + mol.energy_nuc()
-
-    print(energy)
     print('Spin measurement')
-
     qc.barrier()
     for k in range(4):
         qc.measure(k, k)
 
-    # qc.draw('mpl')
+    qc.draw('mpl')
 
-    shots = 100000
-    backend = AerProvider().get_backend('qasm_simulator')
-    result = backend.run(qc, shots=shots).result().get_counts()
-    print(result)
+    # shots = 100000
+    # backend = AerProvider().get_backend('qasm_simulator')
+    # result = backend.run(qc, shots=shots).result().get_counts()
+    # print(result)
 
-    spin = 0
-    for key, value in result.items():
-        for i, orb in enumerate(reversed([*key])):
-            if i < 2:
-                spin += value * int(orb)
-            else:
-                spin -= value * int(orb)
+    # spin = 0
+    # for key, value in result.items():
+    #     for i, orb in enumerate(reversed([*key])):
+    #         if i < 2:
+    #             spin += value * int(orb)
+    #         else:
+    #             spin -= value * int(orb)
 
-    print(f'multiplicity: {abs(spin/shots/2)}')
+    # print(f'multiplicity: {abs(spin/shots/2)}')
+
+#%%
+import numpy as np
+from pyscf import gto, scf
+from qiskit import QuantumCircuit
+from qiskit_aer import AerProvider
+from qc_practice import SSVQE
+from qc_practice.ansatz import SpinFlipUCCSD
+from qc_practice.profile import Profile
+
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.74', basis = 'sto-3g')
+rhf = scf.RHF(mol)
+profile = Profile()
+profile.num_orb = rhf.get_hcore().shape[0]
+
+ssvqe = SSVQE(mol)
+ssvqe.ansatz = SpinFlipUCCSD()
+coeff = [0.01201245,  0.01782515, -0.23119888,  1.79793851]
+qc = QuantumCircuit(4, 4)
+qc.x(0)
+qc.x(3)
+
+ssvqe._circuit(qc, SpinFlipUCCSD().ansatz(profile, coeff))
+qc.barrier()
+for k in range(4):
+    qc.measure(k, k)
+
+qc.draw('mpl')
+# shots = 100000
+# backend = AerProvider().get_backend('qasm_simulator')
+# result = backend.run(qc, shots=shots).result().get_counts()
+# print(result)
+
+# spin = 0
+# for key, value in result.items():
+#     for i, orb in enumerate(reversed([*key])):
+#         if i < 2:
+#             spin += value * int(orb)
+#         else:
+#             spin -= value * int(orb)
+
+# print(f'multiplicity: {abs(spin/shots/2)}')
