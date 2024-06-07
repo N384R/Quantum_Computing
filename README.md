@@ -1,6 +1,7 @@
-Python Quantum Circuit Calculation Library.
+## Python Quantum Circuit Calculation Library.
 
-Can do:\n
+Can do:
+
     1. Variational Quantum Eigensolver (VQE)
     2. Subspace-Search Variational Quantum Eigensolver (SSVQE)
 
@@ -8,6 +9,7 @@ Can do:\n
     3. Variational Quantum Deplation (VQD)
 
 Possible ansatz:
+
     1. Unitary Coupled Cluster (UCCSD) Group
         a. UCCSD
         b. Spin-Flip UCCSD
