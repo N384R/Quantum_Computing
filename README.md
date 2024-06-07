@@ -21,5 +21,5 @@ Possible ansatz:
 What is New:
 
     (scheduled)
-    1. Spin-Orbit Coupling Effect Measurement
+    1. Spin-Orbit Coupling Measurement
     2. Equation-of-Motion UCCSD (EOM-UCCSD)
