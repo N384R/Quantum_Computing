@@ -6,22 +6,21 @@ class FermionicSort:
         self.operator = operator
         if operator is None:
             self.operator = input("Input: ")
-        split_operator = self.split_operator(self.operator)
-        number_sort = self.number_sort(split_operator)
-        dirac_sort = self.dirac_sort(number_sort)
-        number_sort = self.number_sort(dirac_sort)
-        length_sort = self.length_sort(number_sort)
+        split_operator   = self.split_operator(self.operator)
+        number_sort      = self.number_sort(split_operator)
+        dirac_sort       = self.dirac_sort(number_sort)
+        number_sort      = self.number_sort(dirac_sort)
+        length_sort      = self.length_sort(number_sort)
         compute_operator = self.compute_operator(length_sort)
-        self.operator = compute_operator
+        self.operator    = compute_operator
 
     def __iter__(self):
-        return iter(self.operator)
+        return iter(self.operator) # type: ignore
 
     def split_operator(self, operator):
         operator = operator.split()
         if not operator:
-            print("Error: Invalid Operator")
-            exit()
+            raise ValueError("Invalid operator")
 
         for i, op in enumerate(operator):
             if any(sign in op for sign in ('-', '+')) and len(op) > 1:

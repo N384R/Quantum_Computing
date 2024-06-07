@@ -69,7 +69,6 @@ driver = PySCFDriver(
     basis = 'sto3g',
     charge = 0,
     spin = 0,
-    
     unit = DistanceUnit.ANGSTROM,
 )
 
