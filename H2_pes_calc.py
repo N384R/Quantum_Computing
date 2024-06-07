@@ -17,14 +17,16 @@ from pyscf import gto, scf
 from pyscf import cc
 
 exact = True
+basis = '4-31g'
+save_dir = '4-31g_test'
 
-bond_lengths = np.arange(0.5, 2.5, 0.1)
+bond_lengths = np.arange(0.5, 2.51, 0.01)
 potential_energy_surface = {}
 
 for i in bond_lengths:
     driver_singlet = PySCFDriver(
         atom = f"H 0 0 0; H 0 0 {i}",
-        basis = 'sto3g',
+        basis = basis,
         charge = 0,
         spin = 0,
         unit = DistanceUnit.ANGSTROM,
@@ -33,7 +35,7 @@ for i in bond_lengths:
 
     problem_singlet = driver_singlet.run()
     mapper = JordanWignerMapper()
-    es_solver_singlet = NumPyEigensolver(k=3)
+    es_solver_singlet = NumPyEigensolver(k=4)
     es_solver_singlet.filter_criterion = problem_singlet.get_default_filter_criterion()
     solver = ExcitedStatesEigensolver(mapper, es_solver_singlet)
 
@@ -42,7 +44,7 @@ for i in bond_lengths:
     potential_energy_surface[f'{i:.02f}'] = list(result_singlet.total_energies)
 
 for key, value in potential_energy_surface.items():
-    mol = gto.M(atom = f'H 0 0 0; H 0 0 {key}', basis = 'sto-3g', spin=2)
+    mol = gto.M(atom = f'H 0 0 0; H 0 0 {key}', basis = basis, spin=2)
     mf = scf.UHF(mol)
     mf.kernel()
     ccsd = cc.CCSD(mf)
@@ -58,7 +60,8 @@ x = np.array(list(potential_energy_surface.keys()), dtype=float)
 plt.plot(x, data_np)
 plt.xlabel('Bond Length')
 plt.ylabel('Energy')
-plt.savefig('figures/H2_exact_PES.png')
+plt.savefig(f'{save_dir}/H2_exact_PES.png')
 
-with open('data/H2_exact_PES.json', 'w', encoding='utf-8') as f:
+with open(f'{save_dir}/H2_exact_PES.json', 'w', encoding='utf-8') as f:
     json.dump(potential_energy_surface, f, indent=4)
+
