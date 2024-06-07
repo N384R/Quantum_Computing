@@ -9,7 +9,7 @@ vqe.run()
 #%%
 from pyscf import gto
 from qc_practice import VQE
-from qc_practice.ansatz import UCCSD
+from qc_practice.ansatz import UCCSD, SpinFlipUCCSD
 
 mol = gto.M(atom = 'H 0 0 0; H 0 0 2.30', basis = '4-31g')
 vqe = VQE(mol, UCCSD())

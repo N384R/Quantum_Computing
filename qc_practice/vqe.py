@@ -16,6 +16,8 @@ _talk: Prints the output based on the verbosity level.
 _measure_spin: Measures the spin of the quantum circuit.
 '''
 
+from typing import cast
+import numpy as np
 from pyscf import scf, ao2mo
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
@@ -28,14 +30,23 @@ class VQE:
 
     def __init__(self, mol, ansatz=None, verbose=1):
         self.mol = mol
-        self.ansatz = ansatz
-        self.profile = Profile()
+        self.ansatz = ansatz if ansatz else None
+        self.profile: Profile = Profile()
         self.verbose = verbose
         self.just_hf = False
-        self._shots = None
 
+        self._shots: int
         self.__iteration = 0
-        self.__hamiltonian_pauli = None
+        self.__hamiltonian_pauli = {}
+
+    @property
+    def ansatz(self):
+        'The ansatz to be used for the calculation.'
+        return self.__ansatz
+
+    @ansatz.setter
+    def ansatz(self, ansatz):
+        self.__ansatz = ansatz
 
     def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
@@ -60,8 +71,9 @@ class VQE:
         n = self.profile.num_orb
 
         two_elec = self.mol.intor('int2e')
-        two_elec_mo = ao2mo.kernel(self.mol, c, two_elec, compact=False)
-        two_elec_mo = two_elec_mo.reshape((n, n, n, n))
+        two_elec_mo = np.asarray(
+            ao2mo.kernel(self.mol, c, two_elec, compact=False)
+            ).reshape((n, n, n, n))
 
         self.__hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
         self.profile.energy_elec = rhf.energy_elec()[0]
@@ -152,13 +164,14 @@ class VQE:
                 continue
 
             backend = AerProvider().get_backend('qasm_simulator')
-            result = backend.run(qc_2, shots=self._shots).result().get_counts()
+            result = cast(dict[str, float],
+                          backend.run(qc_2, shots=self._shots).result().get_counts())
 
             counts = 0
             for key, value in result.items():
                 counts += (-1)**sum(int(k) for k in key) * value
 
-            expectation = counts/self._shots * values.real
+            expectation = counts / self._shots * values.real
 
             self._talk(f'Expectation: {expectation:18.15f} {p_string}', verb=2)
             energy += expectation
@@ -195,7 +208,7 @@ class VQE:
 
         self._shots = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._batch, coeff, method='SLSQP', tol=1e-6)
+        optimized = opt.minimize(self._batch, coeff, method='COBYLA')
         self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x
@@ -215,11 +228,13 @@ class VQE:
             print(line, end=end)
 
     def _measure_spin(self, qc):
+        qc_2 = qc.copy()
         for k in range(self.profile.num_orb * 2):
-            qc.measure(k, k)
+            qc_2.measure(k, k)
 
         backend = AerProvider().get_backend('qasm_simulator')
-        result = backend.run(qc, shots=self._shots).result().get_counts()
+        result = cast(dict[str, float],
+                          backend.run(qc_2, shots=self._shots).result().get_counts())
         # print(result)
         spin = 0
         for key, value in result.items():

@@ -10,7 +10,7 @@ from qc_practice.ansatz import SpinFlipUCCSD
 save_dir = '4-31g_test'
 
 def ssvqe_calc(bond_len):
-    mol = gto.M(atom = f'H 0 0 0; H 0 0 {bond_len}', basis = 'sto-3g')
+    mol = gto.M(atom = f'H 0 0 0; H 0 0 {bond_len}', basis = '4-31g')
     ssvqe = SSVQE(mol)
     ssvqe.ansatz = SpinFlipUCCSD()
     ssvqe.weights = [1, 0.1, 0.1, 0.1, 0.01, 0.001]
@@ -40,6 +40,6 @@ plt.plot(x, data_np)
 plt.xlabel('Bond Length')
 plt.ylabel('Energy')
 
-# plt.savefig(f'{save_dir}/H2_sfuccsd_PES.png')
-# with open(f'{save_dir}/H2_sfuccsd_PES.json', 'w', encoding='utf-8') as f:
-#     json.dump(pes, f, indent=4)
+plt.savefig(f'{save_dir}/H2_sfuccsd_PES.png')
+with open(f'{save_dir}/H2_sfuccsd_PES.json', 'w', encoding='utf-8') as f:
+    json.dump(pes, f, indent=4)

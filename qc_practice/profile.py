@@ -1,15 +1,18 @@
 import json
+import numpy as np
+from qiskit import QuantumCircuit
 
 class Profile:
     def __init__(self):
-        self.state = None
-        self.num_orb = None
-        self.num_elec = None
-        self.coeff = None
-        self.energy_elec = None
-        self.energy_nucl = None
-        self.circuit = None
-        self.spin = None
+        self.state: int = 0
+        self.num_orb: int = 0
+        self.num_elec: int = 0
+        self.energy_elec: float = 0.00
+        self.energy_nucl: float = 0.00
+        self.spin: float = 0.00
+        self.coeff: np.ndarray = np.array([])
+        self.circuit: QuantumCircuit = QuantumCircuit()
+
 
     def energy_total(self):
         return self.energy_elec + self.energy_nucl
@@ -41,7 +44,7 @@ class Profile:
 
     def save(self, filename):
         self.coeff = self.coeff.tolist()
-        self.circuit = 'QuantumCircuit'
+        self.circuit = 'QuantumCircuit' # type: ignore
         with open(filename + '.json', 'w', encoding='utf-8') as f:
             json.dump(self.show(), f, indent=4)
 

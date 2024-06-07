@@ -17,7 +17,7 @@ _profiles_update: Updates the profiles with the calculated energies.
 from itertools import combinations
 import scipy.optimize as opt
 from qc_practice import VQE
-from qc_practice.profile import Profiles
+from .profile import Profiles
 
 class SSVQE(VQE):
     '''
@@ -26,14 +26,15 @@ class SSVQE(VQE):
     def __init__(self, mol, ansatz=None, **kwargs):
         super().__init__(mol, ansatz=ansatz)
 
-        self.active_space = kwargs.get('active_space', None)
-        self.weights = kwargs.get('weights', None)
         self.koopmans = kwargs.get('koopmans', False)
         self.verbose = kwargs.get('verbose', 1)
 
+        self.active_space: list[int] = kwargs.get('active_space', None)
+        self.weights: list[float]
+        self.__nspace: int
+
+        self.__transition = iter(())
         self.__p = Profiles()
-        self.__nspace = None
-        self.__transition = None
         self.__trial = 0
 
     def _init_setup(self):
@@ -106,10 +107,10 @@ class SSVQE(VQE):
         self.__p.add(self.profile, self.__nspace+1)
         self._shots = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._ssvqe_batch, coeff, method='SLSQP', tol=1e-6)
+        optimized = opt.minimize(self._ssvqe_batch, coeff, method='COBYLA')
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
-        self.profile = self._profiles_update()
+        self.profile = self._profiles_update() # type: ignore
         self._talk('\nFinal Excited State Energies:')
         for i in range(self.__nspace+1):
             self._talk(f'State_{i} Energy: {self.__p[i].energy_total():18.15f}')
