@@ -195,7 +195,7 @@ class VQE:
 
         self._shots = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._batch, coeff, method='COBYLA', tol=1e-6)
+        optimized = opt.minimize(self._batch, coeff, method='SLSQP', tol=1e-6)
         self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x

@@ -1,6 +1,6 @@
 Python Quantum Circuit Calculation Library.
 
-Can do:
+Can do:\n
     1. Variational Quantum Eigensolver (VQE)
     2. Subspace-Search Variational Quantum Eigensolver (SSVQE)
 
