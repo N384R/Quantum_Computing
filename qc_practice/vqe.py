@@ -31,13 +31,13 @@ class VQE:
     def __init__(self, mol, ansatz=None, verbose=1):
         self.mol = mol
         self.ansatz = ansatz if ansatz else None
-        self.profile: Profile = Profile()
         self.verbose = verbose
         self.just_hf = False
 
         self._shots: int
         self.__iteration = 0
         self.__hamiltonian_pauli = {}
+        self.profile: Profile = Profile()
 
     @property
     def ansatz(self):
@@ -47,6 +47,15 @@ class VQE:
     @ansatz.setter
     def ansatz(self, ansatz):
         self.__ansatz = ansatz
+
+    @property
+    def verbose(self):
+        'The verbosity level of the calculation.'
+        return self.__verbose
+
+    @verbose.setter
+    def verbose(self, verbose):
+        self.__verbose = verbose
 
     def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
