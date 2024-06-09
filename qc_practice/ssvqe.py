@@ -26,25 +26,50 @@ class SSVQE(VQE):
     def __init__(self, mol, ansatz=None, **kwargs):
         super().__init__(mol, ansatz=ansatz)
 
+        self.active_space = kwargs.get('active_space', [1, 1])
         self.koopmans = kwargs.get('koopmans', False)
+        self.weights = kwargs.get('weights', None)
         self.verbose = kwargs.get('verbose', 1)
-
-        self.active_space: list[int] = kwargs.get('active_space', None)
-        self.weights: list[float]
         self.__nspace: int
 
         self.__transition = iter(())
         self.__p = Profiles()
         self.__trial = 0
 
+    @property
+    def active_space(self):
+        'The active space for the calculation.'
+        return self.__active_space
+
+    @active_space.setter
+    def active_space(self, active_space):
+        self.__active_space = active_space
+
+    @property
+    def koopmans(self):
+        'The Koopmans condition for the calculation.'
+        return self.__koopmans
+
+    @koopmans.setter
+    def koopmans(self, koopmans):
+        self.__koopmans = koopmans
+
+    @property
+    def weights(self):
+        'The weights for the calculation.'
+        return self.__weights
+
+    @weights.setter
+    def weights(self, weights):
+        self.__weights = weights
+
     def _init_setup(self):
         super()._init_setup()
 
-        if self.active_space is None:
-            self.active_space = [1, 1]
-
         k = self.active_space
-        if ((k[1] > self.profile.num_orb/2) or (k[0] > self.profile.num_elec/2)):
+        no = self.profile.num_orb
+        ne = self.profile.num_elec
+        if ((k[1] > no - ne//2) or (k[0] > ne//2)):
             raise ValueError('Invalid active space. Please check the basis.')
 
         self.__nspace = k[0] * k[1] * 4
@@ -52,7 +77,7 @@ class SSVQE(VQE):
             self.__nspace += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
 
         if not self.weights:
-            self.weights = [1]
+            self.weights = [1.0]
             for i in range(1, self.__nspace+1):
                 self.weights.append(self.weights[i-1] / 4)
 
@@ -104,10 +129,13 @@ class SSVQE(VQE):
     def run(self, shots=10000):
         self._init_setup()
         self._talk('\nStarting SSVQE Calculation')
+        self._talk(f'\nActive Space: {self.active_space}')
+        self._talk(f'Weights: {self.weights}')
+        self._talk(f'Koopmans Condition: {self.koopmans}')
         self.__p.add(self.profile, self.__nspace+1)
         self._shots = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._ssvqe_batch, coeff, method='COBYLA')
+        optimized = opt.minimize(self._ssvqe_batch, coeff, method='powell')
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
         self.profile = self._profiles_update() # type: ignore

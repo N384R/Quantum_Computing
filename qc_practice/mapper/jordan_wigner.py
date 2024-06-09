@@ -146,6 +146,12 @@ class JordanWignerMapper():
     def __iter__(self):
         return iter(self.pauli_strings)
 
+    def keys(self):
+        return self.pauli_strings.keys()
+
+    def values(self):
+        return self.pauli_strings.values()
+
     def __repr__(self):
         line = ''
         for key, values in self.pauli_strings.items():

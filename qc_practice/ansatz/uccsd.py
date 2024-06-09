@@ -47,9 +47,9 @@ class UCCSD:
                                   range(ne//2, no), range(ne//2, no)):
             val = next(value)
             sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
-            sign = '-' if val > 0 else '+'
             uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+            sign = '-' if val > 0 else '+'
+            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
 
         return JordanWignerMapper(uccsd_fermion)
 
@@ -63,11 +63,13 @@ class SpinFlipUCCSD:
         count = 0
         for _ in product(range(ne//2), range(ne//2, no)):
             count += 2
-        for i, j, k, l in product(range(ne//2), range(ne//2),
+        for _ in product(range(ne//2), range(ne//2),
                                   range(ne//2, no), range(ne//2, no)):
             count += 1
-            if i == j and k == l:
+        for i in range(no-1):
+            for _ in range(i+1, no):
                 count += 1
+
         return [coeff] * count
 
     def ansatz(self, profile, coeff):
@@ -94,15 +96,16 @@ class SpinFlipUCCSD:
                                   range(ne//2, no), range(ne//2, no)):
             val = next(value)
             sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
-            sign = '-' if val > 0 else '+'
             uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+            sign = '-' if val > 0 else '+'
+            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
 
-            if i == j and k == l:
+        for i in range(no-1):
+            for j in range(i+1, no):
                 val = next(value)
                 sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {k+no}^ {k} {i+no} ' + '\n'
+                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
                 sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {k}^ {i+no}^ {i} {k+no} ' + '\n'
+                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
 
         return JordanWignerMapper(uccsd_fermion)

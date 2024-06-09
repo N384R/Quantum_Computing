@@ -17,6 +17,7 @@ _measure_spin: Measures the spin of the quantum circuit.
 '''
 
 from typing import cast
+import time
 import numpy as np
 from pyscf import scf, ao2mo
 import scipy.optimize as opt
@@ -30,7 +31,7 @@ class VQE:
 
     def __init__(self, mol, ansatz=None, verbose=1):
         self.mol = mol
-        self.ansatz = ansatz if ansatz else None
+        self.ansatz = ansatz
         self.verbose = verbose
         self.just_hf = False
 
@@ -118,18 +119,17 @@ class VQE:
             qc.x(qubit+self.profile.num_orb)
 
     def _circuit(self, qc, ansatz):
+        chk = []
         for p_string, values in ansatz.items():
-            chk = []
+            chk.clear()
             for idx, p in p_string.items():
                 if p.symbol == 'X':
                     qc.h(idx)
-
                 elif p.symbol == 'Y':
                     qc.s(idx)
                     qc.h(idx)
-
                 if p.symbol != 'I':
-                    chk += [idx]
+                    chk.append(idx)
 
             for i in chk:
                 if i != max(chk):
@@ -144,13 +144,12 @@ class VQE:
             for idx, p in p_string.items():
                 if p.symbol == 'X':
                     qc.h(idx)
-
                 elif p.symbol == 'Y':
                     qc.h(idx)
                     qc.sdg(idx)
 
     def _measure(self, qc):
-        energy = 0.
+        energy = 0.0
         for p_string, values in self.__hamiltonian_pauli.items():
             qc_2 = qc.copy()
             for idx, p in p_string.items():
@@ -217,7 +216,7 @@ class VQE:
 
         self._shots = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._batch, coeff, method='COBYLA')
+        optimized = opt.minimize(self._batch, coeff, method='powell')
         self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x
@@ -244,7 +243,7 @@ class VQE:
         backend = AerProvider().get_backend('qasm_simulator')
         result = cast(dict[str, float],
                           backend.run(qc_2, shots=self._shots).result().get_counts())
-        # print(result)
+        print(result)
         spin = 0
         for key, value in result.items():
             for i, orb in enumerate(reversed([*key])):

@@ -28,7 +28,7 @@ def pes_mult(bond_lens):
             energies = profile.energy_total()
             print(f'Energy: {energies}')
             surface |= {bond_len: energies}
-            profile.save(f'{save_dir}/H2_sto3g_{bond_len}')
+            profile.save(f'{save_dir}/H2_sfuccsd_{bond_len}')
     return surface
 
 bond_lengths = np.arange(0.50, 2.50, 0.1)
