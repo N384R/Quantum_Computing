@@ -43,10 +43,14 @@ class Profile:
         return profile
 
     def save(self, filename):
-        self.coeff = self.coeff.tolist()
-        self.circuit = 'QuantumCircuit' # type: ignore
+        def convert(o):
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+            if isinstance(o, QuantumCircuit):
+                return 'QuantumCircuit'
+            return o
         with open(filename + '.json', 'w', encoding='utf-8') as f:
-            json.dump(self.show(), f, indent=4)
+            json.dump(self.show(), f, indent=4, default=convert)
 
     #Need to me modified to print currect state
     #Need to me modified to print currect state
@@ -83,13 +87,6 @@ class Profiles:
 
     def energy_total(self):
         return [profile.energy_total() for profile in self.profiles]
-
-    def save(self, filename):
-        for i, profile in enumerate(self.profiles):
-            profile.coeff = profile.coeff.tolist()
-            profile.circuit = f'QuantumCircuit_{i}'
-        with open(filename + '.json', 'w', encoding='utf-8') as f:
-            json.dump(self.show(), f, indent=4)
 
     def __repr__(self):
         return f'{self.profiles}'

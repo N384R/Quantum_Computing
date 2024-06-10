@@ -169,7 +169,7 @@ class VQE:
         else:
             results = [self._single_measure(task) for task in tasks]
 
-        energy = sum(results).item()
+        energy = sum(results)
         return energy
 
     def _batch(self, coeff):
