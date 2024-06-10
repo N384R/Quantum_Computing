@@ -1,4 +1,5 @@
 #%%
+import imp
 from pyscf import gto, scf
 
 mol = gto.M(atom = 'Li 0 0 0; H 0 0 1.596', basis = 'sto-3g')
@@ -61,13 +62,19 @@ tddft_h2o.kernel()
 weights, nto = tddft_h2o.get_nto(state=2)
 
 #%%
-
-from pyscf import gto, scf
+import numpy as np
+from pyscf import gto, scf, ao2mo
 from pyscf.geomopt.geometric_solver import optimize
 
-mol_h2o = gto.M(atom = 'O 0 0 0; H 0 1 0; H 0 0 1', basis = 'ccpvdz')
-rhf_h2o = scf.RHF(mol_h2o)
-opt_h2o = optimize(rhf_h2o)
+mol = gto.M(atom = 'H 0 0 0; H 0 0 5', basis = '4-31g')
+uhf = scf.RHF(mol)
+uhf.kernel()
+hcore = uhf.get_hcore()
+c_a = uhf.mo_coeff
+hcore_a_mo = c_a.T @ hcore @ c_a
+print(hcore_a_mo)
+
+
 
 # %%
 

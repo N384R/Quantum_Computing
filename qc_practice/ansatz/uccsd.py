@@ -11,7 +11,9 @@ from qc_practice.mapper.jordan_wigner import JordanWignerMapper
 
 class UCCSD:
     'Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
-    def generate_coeff(self, profile, coeff=1e-5):
+
+    @staticmethod
+    def generate_coeff(profile, coeff=1e-5):
         'Generate UCCSD coefficients'
         no = profile.num_orb
         ne = profile.num_elec
@@ -24,8 +26,9 @@ class UCCSD:
 
         return [coeff] * count
 
-    def ansatz(self, profile, coeff):
-        'Generate UCCSD ansatz circuit'
+    @staticmethod
+    def mapping(profile, coeff):
+        'Generate UCCSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
         ne = profile.num_elec
@@ -53,10 +56,42 @@ class UCCSD:
 
         return JordanWignerMapper(uccsd_fermion)
 
-class SpinFlipUCCSD:
+    def ansatz(self, qc, profile, coeff):
+        'Generate UCCSD ansatz circuit'
+        chk = []
+        for p_string, values in self.mapping(profile, coeff).items():
+            chk.clear()
+            for idx, p in p_string.items():
+                if p.symbol == 'X':
+                    qc.h(idx)
+                elif p.symbol == 'Y':
+                    qc.s(idx)
+                    qc.h(idx)
+                if p.symbol != 'I':
+                    chk.append(idx)
+
+            for i in chk:
+                if i != max(chk):
+                    qc.cx(i, i+1)
+
+            qc.rz(values.imag, max(chk))
+
+            for i in reversed(chk):
+                if i != max(chk):
+                    qc.cx(i, i+1)
+
+            for idx, p in p_string.items():
+                if p.symbol == 'X':
+                    qc.h(idx)
+                elif p.symbol == 'Y':
+                    qc.h(idx)
+                    qc.sdg(idx)
+
+class SpinFlipUCCSD(UCCSD):
     'Spin Flip Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
 
-    def generate_coeff(self, profile, coeff=1e-5):
+    @staticmethod
+    def generate_coeff(profile, coeff=1e-5):
         'Generate Spin Flip UCCSD coefficients'
         no = profile.num_orb
         ne = profile.num_elec
@@ -72,8 +107,9 @@ class SpinFlipUCCSD:
 
         return [coeff] * count
 
-    def ansatz(self, profile, coeff):
-        'Generate Spin Flip UCCSD ansatz circuit'
+    @staticmethod
+    def mapping(profile, coeff):
+        'Generate Spin Flip UCCSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
         ne = profile.num_elec

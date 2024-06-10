@@ -103,6 +103,7 @@ class SSVQE(VQE):
 
     def _swap_init(self, qc, state):
         state = next(self.__transition)
+        print(state)
         qc.swap(state[0], state[1])
 
     def _initialize_circuit(self, qc):

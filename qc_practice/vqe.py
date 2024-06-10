@@ -17,9 +17,11 @@ _measure_spin: Measures the spin of the quantum circuit.
 '''
 
 from typing import cast
-import time
+from itertools import product
+from multiprocessing import Pool
 import numpy as np
 from pyscf import scf, ao2mo
+from pyscf.gto import Mole
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
@@ -29,15 +31,19 @@ from .profile import Profile
 class VQE:
     'Class for running Variational Quantum Eigensolver (VQE) on a given molecule.'
 
-    def __init__(self, mol, ansatz=None, verbose=1):
-        self.mol = mol
+    def __init__(self,
+                 mol: Mole,
+                 ansatz = None,
+                 **kwargs):
+        self.mol: Mole = mol
         self.ansatz = ansatz
-        self.verbose = verbose
-        self.just_hf = False
+        self.verbose = kwargs.get('verbose', 1)
+        self.parallel = kwargs.get('parallel', False)
+        self.just_hf = kwargs.get('just_hf', False)
 
         self._shots: int
         self.__iteration = 0
-        self.__hamiltonian_pauli = {}
+        self._hamiltonian_pauli = {}
         self.profile: Profile = Profile()
 
     @property
@@ -58,6 +64,15 @@ class VQE:
     def verbose(self, verbose):
         self.__verbose = verbose
 
+    @property
+    def parallel(self):
+        'The parallelization flag for the calculation.'
+        return self.__parallel
+
+    @parallel.setter
+    def parallel(self, parallel):
+        self.__parallel = parallel
+
     def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
         self._initialize_profile()
@@ -76,8 +91,8 @@ class VQE:
         c = rhf.mo_coeff
         hcore = rhf.get_hcore()
         hcore_mo = c.T @ hcore @ c
-        self.profile.num_orb = hcore.shape[0]
         self.profile.num_elec = self.mol.nelectron
+        self.profile.num_orb = hcore.shape[0]
         n = self.profile.num_orb
 
         two_elec = self.mol.intor('int2e')
@@ -85,31 +100,28 @@ class VQE:
             ao2mo.kernel(self.mol, c, two_elec, compact=False)
             ).reshape((n, n, n, n))
 
-        self.__hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
+        self._hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
         self.profile.energy_elec = rhf.energy_elec()[0]
         self.profile.energy_nucl = self.mol.energy_nuc()
 
     def _hamiltonian(self, hcore_mo, two_elec_mo):
         second_q = ''
         n = self.profile.num_orb
-        for i in range(n):
-            coeff = hcore_mo[i, i]
+        for i, j in product(range(n), repeat=2):
+            if abs(coeff := hcore_mo[i, j]) < 1e-10:
+                continue
             sign = '+' if coeff > 0 else ''
-            second_q += f'{sign} {coeff:.16f} {i}^ {i}' + '\n'
-            second_q += f'{sign} {coeff:.16f} {i+n}^ {i+n}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i}^ {j}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i+n}^ {j+n}' + '\n'
 
-        for i in range(n):
-            for j in range(n):
-                for k in range(n):
-                    for l in range(n):
-                        coeff = two_elec_mo[i, j, k, l]/2
-                        if coeff < 1e-10:
-                            continue
-                        sign = '+' if coeff > 0 else ''
-                        second_q += f'{sign} {coeff:.16f} {i}^ {k}^ {l} {j}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i}^ {k+n}^ {l+n} {j}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i+n}^ {k}^ {l} {j+n}' + '\n'
-                        second_q += f'{sign} {coeff:.16f} {i+n}^ {k+n}^ {l+n} {j+n}' + '\n'
+        for i, j, k, l in product(range(n), repeat=4):
+            if abs(coeff := two_elec_mo[i, j, k, l]/2) < 1e-10:
+                continue
+            sign = '+' if coeff > 0 else ''
+            second_q += f'{sign} {coeff:.16f} {i}^ {k}^ {l} {j}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i}^ {k+n}^ {l+n} {j}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i+n}^ {k}^ {l} {j+n}' + '\n'
+            second_q += f'{sign} {coeff:.16f} {i+n}^ {k+n}^ {l+n} {j+n}' + '\n'
 
         return JordanWignerMapper(second_q)
 
@@ -118,85 +130,99 @@ class VQE:
             qc.x(qubit)
             qc.x(qubit+self.profile.num_orb)
 
-    def _circuit(self, qc, ansatz):
-        chk = []
-        for p_string, values in ansatz.items():
-            chk.clear()
-            for idx, p in p_string.items():
-                if p.symbol == 'X':
-                    qc.h(idx)
-                elif p.symbol == 'Y':
-                    qc.s(idx)
-                    qc.h(idx)
-                if p.symbol != 'I':
-                    chk.append(idx)
+    # def _measure(self, qc):
+    #     energy = 0.0
+    #     for p_string, values in self.__hamiltonian_pauli.items():
+    #         qc_2 = qc.copy()
+    #         for idx, p in p_string.items():
+    #             if p.symbol == 'X':
+    #                 qc_2.h(idx)
 
-            for i in chk:
-                if i != max(chk):
-                    qc.cx(i, i+1)
+    #             elif p.symbol == 'Y':
+    #                 qc_2.sdg(idx)
+    #                 qc_2.h(idx)
 
-            qc.rz(values.imag, max(chk))
+    #         for idx, p in p_string.items():
+    #             if p.symbol == 'I':
+    #                 continue
 
-            for i in reversed(chk):
-                if i != max(chk):
-                    qc.cx(i, i+1)
+    #             qc_2.measure(idx, idx)
 
-            for idx, p in p_string.items():
-                if p.symbol == 'X':
-                    qc.h(idx)
-                elif p.symbol == 'Y':
-                    qc.h(idx)
-                    qc.sdg(idx)
+    #         if all(p.symbol == 'I' for p in p_string.values()):
+    #             energy += values.real
+    #             self._talk(f'Expectation: {values.real:18.15f} {p_string}', verb=2)
+    #             continue
 
-    def _measure(self, qc):
-        energy = 0.0
-        for p_string, values in self.__hamiltonian_pauli.items():
-            qc_2 = qc.copy()
-            for idx, p in p_string.items():
-                if p.symbol == 'X':
-                    qc_2.h(idx)
+    #         backend = AerProvider().get_backend('qasm_simulator')
+    #         result = cast(dict[str, float],
+    #                       backend.run(qc_2, shots=self._shots).result().get_counts())
 
-                elif p.symbol == 'Y':
-                    qc_2.sdg(idx)
-                    qc_2.h(idx)
+    #         counts = 0
+    #         for key, value in result.items():
+    #             counts += (-1)**sum(int(k) for k in key) * value
 
-            for idx, p in p_string.items():
-                if p.symbol == 'I':
-                    continue
+    #         expectation = counts / self._shots * values.real
 
-                qc_2.measure(idx, idx)
+    #         self._talk(f'Expectation: {expectation:18.15f} {p_string}', verb=2)
+    #         energy += expectation
+    #     return energy
 
-            if all(p.symbol == 'I' for p in p_string.values()):
-                energy += values.real
-                self._talk(f'Expectation: {values.real:18.15f} {p_string}', verb=2)
+    @staticmethod
+    def _single_measure(args: tuple[QuantumCircuit, dict, complex, int]):
+        qc, p_string, values, shots = args
+        qc_2 = qc.copy()
+        for idx, p in p_string.items():
+            if p.symbol == 'X':
+                qc_2.h(idx)
+
+            elif p.symbol == 'Y':
+                qc_2.sdg(idx)
+                qc_2.h(idx)
+
+        for idx, p in p_string.items():
+            if p.symbol == 'I':
                 continue
 
-            backend = AerProvider().get_backend('qasm_simulator')
-            result = cast(dict[str, float],
-                          backend.run(qc_2, shots=self._shots).result().get_counts())
+            qc_2.measure(idx, idx)
 
-            counts = 0
-            for key, value in result.items():
-                counts += (-1)**sum(int(k) for k in key) * value
+        if all(p.symbol == 'I' for p in p_string.values()):
+            return values.real
 
-            expectation = counts / self._shots * values.real
+        backend = AerProvider().get_backend('qasm_simulator')
+        result = cast(dict[str, float],
+                        backend.run(qc_2, shots=shots).result().get_counts())
 
-            self._talk(f'Expectation: {expectation:18.15f} {p_string}', verb=2)
-            energy += expectation
+        counts = 0
+        for key, value in result.items():
+            counts += (-1)**sum(int(k) for k in key) * value
+
+        expectation = counts / shots * values.real
+        return expectation
+
+    def _measure(self, qc):
+        tasks = [(qc, p_string, values, self._shots)
+                 for p_string, values in self._hamiltonian_pauli.items()]
+
+        if self.parallel:
+            with Pool(processes=4) as pool:
+                results = pool.map(self._single_measure, tasks)
+        else:
+            results = [self._single_measure(task) for task in tasks]
+
+        energy = sum(results)
         return energy
 
     def _batch(self, coeff):
         self.__iteration += 1
         self._talk(f"Iteration: {self.__iteration}")
         self._talk('Computing uccsd ansatz..... ', end='')
-        ansatz = self.ansatz.ansatz(self.profile, coeff)
         self._talk('Done')
 
         self._talk('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self.profile.num_orb, 2*self.profile.num_orb)
         self._initialize_circuit(qc)
         if not self.just_hf:
-            self._circuit(qc, ansatz)
+            self.ansatz.ansatz(qc, self.profile, coeff)
         self.profile.circuit = qc
         self._talk('Done')
 
