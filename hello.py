@@ -11,9 +11,3 @@ vqe.ansatz = UCCSD()
 vqe.run()
 
 print(f'VQE calculation took {time.time()-start:.2f} seconds.')
-
-#%%
-
-a = [1, 2, 3, 4]
-b = sum(a)
-print(b)
