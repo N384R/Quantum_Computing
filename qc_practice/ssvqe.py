@@ -79,7 +79,7 @@ class SSVQE(VQE):
         if not self.weights:
             self.weights = [1.0]
             for i in range(1, self.__nspace+1):
-                self.weights.append(self.weights[i-1] / 4)
+                self.weights.append(self.weights[i-1] / 10)
 
     def _electron_excitation(self, active_space):
         n = self.profile.num_elec//2 - active_space[0]
