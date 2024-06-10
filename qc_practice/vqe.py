@@ -127,43 +127,6 @@ class VQE:
             qc.x(qubit)
             qc.x(qubit+self.profile.num_orb)
 
-    # def _measure(self, qc):
-    #     energy = 0.0
-    #     for p_string, values in self.__hamiltonian_pauli.items():
-    #         qc_2 = qc.copy()
-    #         for idx, p in p_string.items():
-    #             if p.symbol == 'X':
-    #                 qc_2.h(idx)
-
-    #             elif p.symbol == 'Y':
-    #                 qc_2.sdg(idx)
-    #                 qc_2.h(idx)
-
-    #         for idx, p in p_string.items():
-    #             if p.symbol == 'I':
-    #                 continue
-
-    #             qc_2.measure(idx, idx)
-
-    #         if all(p.symbol == 'I' for p in p_string.values()):
-    #             energy += values.real
-    #             self._talk(f'Expectation: {values.real:18.15f} {p_string}', verb=2)
-    #             continue
-
-    #         backend = AerProvider().get_backend('qasm_simulator')
-    #         result = cast(dict[str, float],
-    #                       backend.run(qc_2, shots=self._shots).result().get_counts())
-
-    #         counts = 0
-    #         for key, value in result.items():
-    #             counts += (-1)**sum(int(k) for k in key) * value
-
-    #         expectation = counts / self._shots * values.real
-
-    #         self._talk(f'Expectation: {expectation:18.15f} {p_string}', verb=2)
-    #         energy += expectation
-    #     return energy
-
     @staticmethod
     def _single_measure(args: tuple[QuantumCircuit, dict, complex, int]):
         qc, p_string, values, shots = args
