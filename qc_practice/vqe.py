@@ -31,10 +31,7 @@ from .profile import Profile
 class VQE:
     'Class for running Variational Quantum Eigensolver (VQE) on a given molecule.'
 
-    def __init__(self,
-                 mol: Mole,
-                 ansatz = None,
-                 **kwargs):
+    def __init__(self, mol: Mole, ansatz = None, **kwargs):
         self.mol: Mole = mol
         self.ansatz = ansatz
         self.verbose = kwargs.get('verbose', 1)
