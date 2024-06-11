@@ -16,6 +16,7 @@ _talk: Prints the output based on the verbosity level.
 _measure_spin: Measures the spin of the quantum circuit.
 '''
 
+import datetime
 from typing import cast
 from itertools import product
 from multiprocessing import Pool
@@ -197,6 +198,7 @@ class VQE:
 
     def run(self, shots=10000):
         'Run the VQE optimization'
+        start_time = datetime.datetime.now()
         self._init_setup()
         self._talk('Starting VQE Optimization... ')
 
@@ -208,18 +210,20 @@ class VQE:
         self.profile.coeff = optimized.x
 
         self.profile.spin = self._measure_spin(self.profile.circuit)
+        elapsed_time = str(datetime.datetime.now() - start_time)
 
         self._talk(f'Nuclear Repulsion Energy   : {self.profile.energy_nucl:18.15f}')
         self._talk(f'Optimized Electronic Energy: {self.profile.energy_elec:18.15f}\n')
         self._talk(f'Total Energy        : {self.profile.energy_total():18.15f}')
         self._talk(f'Coefficients        : {self.profile.coeff}')
-        self._talk(f'Multiplicity (2S+1) : {self.profile.spin:.02f}')
+        self._talk(f'Multiplicity (2S+1) : {self.profile.spin:.02f}\n')
+        self._talk(f'Elapsed Time        : {elapsed_time.split(".", maxsplit=1)[0]}')
 
         return self.profile
 
     def _talk(self, line, end='\n', verb=1):
         if verb == self.verbose:
-            print(line, end=end)
+            print(line, end=end, flush=True)
 
     def _measure_spin(self, qc):
         qc_2 = qc.copy()
