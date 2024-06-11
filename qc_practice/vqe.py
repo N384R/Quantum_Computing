@@ -223,7 +223,7 @@ class VQE:
 
     def _talk(self, line, end='\n', verb=1):
         if verb == self.verbose:
-            print(line, end=end)
+            print(line, end=end, flush=True)
 
     def _measure_spin(self, qc):
         qc_2 = qc.copy()
