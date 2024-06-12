@@ -2,3 +2,4 @@
 
 from .uccsd import UCCSD, SpinFlipUCCSD, UCCGSD
 from .hea import HEA
+from .sp import SP

@@ -1,13 +1,15 @@
 #%%
-import time
 from pyscf import gto
-from qc_practice import VQE
-from qc_practice.ansatz import UCCSD, HEA
+from qc_practice import SSVQE
+from qc_practice.ansatz import SP
+from qiskit import QuantumCircuit
+from qc_practice.profile import Profile
 
-start = time.time()
-mol = gto.M(atom = 'H 0 0 0; H 0 0 2.30', basis = 'sto-3g')
-vqe = VQE(mol)
-vqe.ansatz = UCCSD()
-vqe.run()
 
-print(f'VQE calculation took {time.time()-start:.2f} seconds.')
+sp = SP()
+profile = Profile()
+profile.num_orb = 
+qc = QuantumCircuit(profile.num_orb*2)
+coeff = sp.generate_coeff(profile)
+sp.ansatz(qc, profile, coeff)
+qc.draw('mpl')
