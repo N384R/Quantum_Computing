@@ -5,14 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyscf import gto
 from qc_practice import SSVQE
-from qc_practice.ansatz import SpinFlipUCCSD
+from qc_practice.ansatz import SpinFlipUCCSD, HEA
 
 save_dir = '4-31g_test'
 
 def ssvqe_calc(bond_len):
     mol = gto.M(atom = f'H 0 0 0; H 0 0 {bond_len}', basis = '4-31g')
     ssvqe = SSVQE(mol)
-    ssvqe.ansatz = SpinFlipUCCSD()
+    ssvqe.ansatz = HEA()
     ssvqe.weights = [1, 0.1, 0.1, 0.1, 0.01, 0.001]
     ssvqe.verbose = 0
     ssvqe.run()

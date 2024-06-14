@@ -32,17 +32,12 @@ from .profile import Profile
 class VQE:
     'Class for running Variational Quantum Eigensolver (VQE) on a given molecule.'
 
-    def __init__(self, mol: Mole, ansatz = None, **kwargs):
+    def __init__(self, mol: Mole, ansatz = None):
         self.mol: Mole = mol
         self.ansatz = ansatz
-        self.verbose = kwargs.get('verbose', 1)
-        self.parallel = kwargs.get('parallel', False)
-        self.just_hf = kwargs.get('just_hf', False)
-
-        self._shots: int
-        self.__iteration = 0
         self._hamiltonian_pauli = {}
         self.profile: Profile = Profile()
+        self._config = {'iteration': 0, 'verbose': 1, 'parallel': False}
 
     @property
     def ansatz(self):
@@ -56,20 +51,22 @@ class VQE:
     @property
     def verbose(self):
         'The verbosity level of the calculation.'
-        return self.__verbose
+        return self._config['verbose']
 
     @verbose.setter
     def verbose(self, verbose):
-        self.__verbose = verbose
+        self._config['verbose'] = verbose
 
     @property
     def parallel(self):
         'The parallelization flag for the calculation.'
-        return self.__parallel
+        return self._config['parallel']
 
     @parallel.setter
     def parallel(self, parallel):
-        self.__parallel = parallel
+        if not isinstance(parallel, bool):
+            raise ValueError("Parallel flag must be a boolean.")
+        self._config['parallel'] = parallel
 
     def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
@@ -161,7 +158,7 @@ class VQE:
         return expectation
 
     def _measure(self, qc):
-        tasks = [(qc, p_string, values, self._shots)
+        tasks = [(qc, p_string, values, self._config['shots'])
                  for p_string, values in self._hamiltonian_pauli.items()]
 
         if self.parallel:
@@ -174,15 +171,15 @@ class VQE:
         return energy
 
     def _batch(self, coeff):
-        self.__iteration += 1
-        self._talk(f"Iteration: {self.__iteration}")
+        self._config['iteration'] += 1
+        self._talk(f"Iteration: {self._config['iteration']}")
         self._talk('Computing uccsd ansatz..... ', end='')
         self._talk('Done')
 
         self._talk('Building quantum circuit... ', end='')
         qc = QuantumCircuit(2*self.profile.num_orb, 2*self.profile.num_orb)
         self._initialize_circuit(qc)
-        if not self.just_hf:
+        if self.ansatz:
             self.ansatz.ansatz(qc, self.profile, coeff)
         self.profile.circuit = qc
         self._talk('Done')
@@ -202,7 +199,7 @@ class VQE:
         self._init_setup()
         self._talk('Starting VQE Optimization... ')
 
-        self._shots = shots
+        self._config['shots'] = shots
         coeff = self.ansatz.generate_coeff(self.profile)
         optimized = opt.minimize(self._batch, coeff, method='powell')
         self._talk('\n!!Successfully Converged!!\n')
@@ -232,7 +229,7 @@ class VQE:
 
         backend = AerProvider().get_backend('qasm_simulator')
         result = cast(dict[str, float],
-                          backend.run(qc_2, shots=self._shots).result().get_counts())
+                          backend.run(qc_2, shots=self._config['shots']).result().get_counts())
         print(result)
         spin = 0
         for key, value in result.items():
@@ -242,4 +239,4 @@ class VQE:
                 else:
                     spin -= value * int(orb)
 
-        return abs(spin/self._shots/2)
+        return abs(spin/self._config['shots']/2)

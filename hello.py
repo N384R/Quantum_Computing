@@ -8,7 +8,7 @@ from qc_practice.profile import Profile
 
 sp = SP()
 profile = Profile()
-profile.num_orb = 
+profile.num_orb = 2
 qc = QuantumCircuit(profile.num_orb*2)
 coeff = sp.generate_coeff(profile)
 sp.ansatz(qc, profile, coeff)
