@@ -5,7 +5,7 @@ from qc_practice.ansatz import SP, RSP
 from qiskit import QuantumCircuit
 from qc_practice.profile import Profile
 
-sp = RSP()
+sp = SP(depth=3)
 profile = Profile()
 profile.num_orb = 2
 qc = QuantumCircuit(profile.num_orb*2)

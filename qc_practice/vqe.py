@@ -23,7 +23,6 @@ from multiprocessing import Pool
 import numpy as np
 from pyscf import ao2mo, scf
 from pyscf.gto import Mole
-import scipy.optimize as opt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
 from qc_practice.mapper.jordan_wigner import JordanWignerMapper
@@ -213,7 +212,7 @@ class VQE:
 
         self._config['shots'] = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._batch, coeff, method=self.optimizer)
+        optimized = self.ansatz.call_optimizer(self._batch, coeff, self.optimizer)
         self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x

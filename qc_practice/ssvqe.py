@@ -143,7 +143,7 @@ class SSVQE(VQE):
         self._p.add(self.profile, self._config['nspace']+1)
         self._config['shots'] = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._excite_batch, coeff, method=self.optimizer)
+        optimized = self.ansatz.call_optimizer(self._excite_batch, coeff, self.optimizer)
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
         self.profile = self._profiles_update() # type: ignore

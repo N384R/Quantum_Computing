@@ -6,12 +6,23 @@ The class has the following methods:
 generate_coeff: Generates HEA coefficients.
 ansatz: Generates HEA ansatz circuit.
 '''
+import numpy as np
+import scipy.optimize as opt
+
+def boundary(coeff):
+    'Boundary condition'
+    return [(-np.pi, np.pi)] * len(coeff)
 
 class HEA:
     'Hardware Efficient Ansatz (HEA)'
 
     def __init__(self, depth=1):
         self.depth = depth
+
+    @staticmethod
+    def call_optimizer(func, coeff, method):
+        'Optimize the coefficients'
+        return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
     def generate_coeff(self, profile, coeff=1e-5):
         'Generate HEA coefficients'
@@ -22,7 +33,7 @@ class HEA:
                 count += 2
 
         for _ in range(no*2):
-                count += 2
+            count += 2
 
         return [coeff] * count
 
