@@ -2,3 +2,4 @@
 
 from .vqe import VQE
 from .ssvqe import SSVQE
+from .vqd import VQD

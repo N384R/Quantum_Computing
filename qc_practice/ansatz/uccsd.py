@@ -9,6 +9,14 @@ ansatz: Generates UCCSD ansatz circuit.
 from itertools import product
 from qc_practice.mapper.jordan_wigner import JordanWignerMapper
 
+def sign_p(val):
+    'Sign function'
+    return '+' if val > 0 else '-'
+
+def sign_m(val):
+    'Sign function'
+    return '-' if val > 0 else '+'
+
 class UCCSD:
     'Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
 
@@ -37,24 +45,18 @@ class UCCSD:
         value = iter(coeff)
         for i, j in product(range(ne//2), range(ne//2, no)):
             val = next(value)
-            sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j} ' + '\n'
-            sign = '-' if val > 0 else '+'
-            uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i} ' + '\n'
+            uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j} ' + '\n'
+            uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i} ' + '\n'
 
             val = next(value)
-            sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {i+no}^ {j+no} ' + '\n'
-            sign = '-' if val > 0 else '+'
-            uccsd_fermion += f'{sign} {abs(val):f} {j+no}^ {i+no} ' + '\n'
+            uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i+no}^ {j+no} ' + '\n'
+            uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j+no}^ {i+no} ' + '\n'
 
         for i, j, k, l in product(range(ne//2), range(ne//2),
                                   range(ne//2, no), range(ne//2, no)):
             val = next(value)
-            sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
-            sign = '-' if val > 0 else '+'
-            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+            uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+            uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
 
         return JordanWignerMapper(uccsd_fermion)
 
@@ -89,8 +91,8 @@ class UCCSD:
                     qc.h(idx)
                     qc.sdg(idx)
 
-class SpinFlipUCCSD(UCCSD):
-    'Spin Flip Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
+class UpCCSD(UCCSD):
+    'paired Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
 
     @staticmethod
     def generate_coeff(profile, coeff=1e-5):
@@ -121,32 +123,24 @@ class SpinFlipUCCSD(UCCSD):
         for i in range(ne//2):
             for j in range(ne//2, no):
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i} ' + '\n'
 
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i+no}^ {j+no} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j+no}^ {i+no} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i+no}^ {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j+no}^ {i+no} ' + '\n'
 
         for i, j, k, l in product(range(ne//2), range(ne//2),
                                   range(ne//2, no), range(ne//2, no)):
             val = next(value)
-            sign = '+' if val > 0 else '-'
-            uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
-            sign = '-' if val > 0 else '+'
-            uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+            uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+            uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
 
         for i in range(no-1):
             for j in range(i+1, no):
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
 
         return JordanWignerMapper(uccsd_fermion)
 
@@ -166,10 +160,6 @@ class UCCGSD(UCCSD):
             for _ in product(range(i, no), range(j, no)):
                 count += 1
 
-        for i in range(no-1):
-            for _ in range(i+1, no):
-                count += 1
-
         return [coeff] * count
 
     @staticmethod
@@ -181,31 +171,71 @@ class UCCGSD(UCCSD):
         for i in range(no):
             for j in range(i+1, no):
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i} ' + '\n'
 
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i+no}^ {j+no} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j+no}^ {i+no} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i+no}^ {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j+no}^ {i+no} ' + '\n'
 
         for i, j in product(range(no), range(no)):
             for k, l in product(range(i+1, no), range(j+1, no)):
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+
+        return JordanWignerMapper(uccsd_fermion)
+
+class UpCCGSD(UCCSD):
+    'paired Unitary Coupled Cluster Generalized Single and Double (UpCCGSD) ansatz'
+
+    @staticmethod
+    def generate_coeff(profile, coeff=1e-5):
+        'Generate UCCGSD coefficients'
+        no = profile.num_orb
+        count = 0
+        for i in range(no-1):
+            for _ in range(i+1, no):
+                count += 1
+
+        for i in range(no):
+            for j in range(i, no):
+                count += 2
+
+        for i, j in product(range(no), range(no)):
+            for _ in product(range(i, no), range(j, no)):
+                count += 1
+
+        return [coeff] * count
+
+    @staticmethod
+    def mapping(profile, coeff):
+        'Generate UCCGSD ansatz Pauli strings'
+        uccsd_fermion = ''
+        no = profile.num_orb
+        value = iter(coeff)
 
         for i in range(no-1):
             for j in range(i+1, no):
                 val = next(value)
-                sign = '+' if val > 0 else '-'
-                uccsd_fermion += f'{sign} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
-                sign = '-' if val > 0 else '+'
-                uccsd_fermion += f'{sign} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
 
+        for i in range(no):
+            for j in range(i+1, no):
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i} ' + '\n'
+
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i+no}^ {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j+no}^ {i+no} ' + '\n'
+
+        for i, j in product(range(no), range(no)):
+            for k, l in product(range(i+1, no), range(j+1, no)):
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+
+       
         return JordanWignerMapper(uccsd_fermion)

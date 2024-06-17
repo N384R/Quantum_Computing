@@ -21,7 +21,7 @@ from typing import cast
 from itertools import product
 from multiprocessing import Pool
 import numpy as np
-from pyscf import scf, ao2mo
+from pyscf import ao2mo, scf
 from pyscf.gto import Mole
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
@@ -37,7 +37,7 @@ class VQE:
         self.ansatz = ansatz
         self._hamiltonian_pauli = {}
         self.profile: Profile = Profile()
-        self._config = {'iteration': 0, 'verbose': 1, 'parallel': False}
+        self._config = {'iteration': 0, 'verbose': 1, 'parallel': False, 'optimizer': 'powell'}
 
     @property
     def ansatz(self):
@@ -68,6 +68,15 @@ class VQE:
             raise ValueError("Parallel flag must be a boolean.")
         self._config['parallel'] = parallel
 
+    @property
+    def optimizer(self):
+        'The optimizer to be used for the calculation.'
+        return self._config['optimizer']
+
+    @optimizer.setter
+    def optimizer(self, optimizer):
+        self._config['optimizer'] = optimizer
+
     def _init_setup(self):
         self._talk('Computing Hamiltonian...... ', end='')
         self._initialize_profile()
@@ -80,11 +89,12 @@ class VQE:
             raise ValueError('Please provide an ansatz for the calculation.')
 
     def _initialize_profile(self):
-        rhf = scf.RHF(self.mol)
-        rhf.verbose = 0
-        rhf.kernel()
-        c = rhf.mo_coeff
-        hcore = rhf.get_hcore()
+        mf = scf.RHF(self.mol)
+        mf.verbose = 0
+        mf.kernel()
+
+        c = np.asarray(mf.mo_coeff)
+        hcore = mf.get_hcore()
         hcore_mo = c.T @ hcore @ c
         self.profile.num_elec = self.mol.nelectron
         self.profile.num_orb = hcore.shape[0]
@@ -96,7 +106,7 @@ class VQE:
             ).reshape((n, n, n, n))
 
         self._hamiltonian_pauli = self._hamiltonian(hcore_mo, two_elec_mo)
-        self.profile.energy_elec = rhf.energy_elec()[0]
+        self.profile.energy_elec = mf.energy_elec()[0]
         self.profile.energy_nucl = self.mol.energy_nuc()
 
     def _hamiltonian(self, hcore_mo, two_elec_mo):
@@ -194,14 +204,16 @@ class VQE:
         return energy
 
     def run(self, shots=10000):
-        'Run the VQE optimization'
+        'Run calculation'
         start_time = datetime.datetime.now()
         self._init_setup()
-        self._talk('Starting VQE Optimization... ')
+        self._talk(f'\nStarting {self.__class__.__name__} Calculation\n')
+        self._talk(f'Ansatz: {self.ansatz.__class__.__name__}')
+        self._talk(f'Optimizer: {self.optimizer}')
 
         self._config['shots'] = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._batch, coeff, method='powell')
+        optimized = opt.minimize(self._batch, coeff, method=self.optimizer)
         self._talk('\n!!Successfully Converged!!\n')
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x

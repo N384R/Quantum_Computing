@@ -14,8 +14,12 @@ run: Runs the SSVQE calculation.
 _profiles_update: Updates the profiles with the calculated energies.
 '''
 
+import datetime
+from typing import cast
 from itertools import combinations
 import scipy.optimize as opt
+from qiskit import QuantumCircuit
+from qiskit_aer import AerProvider
 from qc_practice import VQE
 from .profile import Profiles
 
@@ -23,8 +27,8 @@ class SSVQE(VQE):
     '''
     Class for running Subspace-Search Variational Quantum Eigensolver (SSVQE) on a given molecule.
     '''
-    def __init__(self, mol, ansatz=None):
-        super().__init__(mol, ansatz=ansatz)
+    def __init__(self, mol, ansatz = None):
+        super().__init__(mol, ansatz = ansatz)
 
         self._p = Profiles()
         self._config['trial'] = 0
@@ -74,8 +78,8 @@ class SSVQE(VQE):
             self._config['nspace'] += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
 
         if not self.weights:
-            self.weights = []
-            for i in range(self._config['nspace'] + 1):
+            self.weights = [self._config['nspace']+5]
+            for i in range(1, self._config['nspace'] + 1):
                 self.weights.append(self._config['nspace'] - i + 1)
 
     def _electron_excitation(self, active_space):
@@ -98,49 +102,58 @@ class SSVQE(VQE):
                     l = (j[0] + n, j[1] + n)
                     yield (k, l)
 
-    def _swap_init(self, qc, state):
+    def _swap_init(self, qc):
         state = next(self._transition)
         print(state)
         qc.swap(state[0], state[1])
 
     def _initialize_circuit(self, qc):
         super()._initialize_circuit(qc)
-        if self.profile.state != 0:
-            self._swap_init(qc, self.profile.state)
+        if self._config['state'] != 0:
+            self._swap_init(qc)
 
-    def _ssvqe_batch(self, coeff):
+    def _excite_batch(self, coeff):
         self._config['trial'] += 1
         self._talk(f"\nIteration: {self._config['trial']}")
         self._transition = self._electron_excitation(self.active_space)
         for i in range(self._config['nspace']+1):
-            self.profile.state = i
-            self._p[i].state = i
+            self._config['state'] = i
             self.verbose, verbose = 0, self.verbose
             self._p[i].energy_elec = self._batch(coeff)
             self._p[i].transition = self._transition
             self._p[i].circuit = self.profile.circuit
+            self._p[i].state = i
             self.verbose = verbose
             self._talk(f'State_{i} Energy: {self._p[i].energy_total():18.15f}')
-        weight_en = sum(self.weights[i] * self._p[i].energy_elec for i in range(self._config['nspace']+1))
+        weight_en = sum(self.weights[i] * self._p[i].energy_elec
+                        for i in range(self._config['nspace']+1))
 
         return weight_en
 
     def run(self, shots=10000):
+        start_time = datetime.datetime.now()
         self._init_setup()
-        self._talk('\nStarting SSVQE Calculation')
-        self._talk(f'\nActive Space: {self.active_space}')
-        self._talk(f'Weights: {self.weights}')
+        self._talk(f'\nStarting {self.__class__.__name__} Calculation\n')
+        self._talk(f'Ansatz: {self.ansatz.__class__.__name__}')
+        self._talk(f'Optimizer: {self.optimizer}')
+        self._talk(f'Active Space: {self.active_space}')
         self._talk(f'Koopmans Condition: {self.koopmans}')
+        self._talk(f'Weights: {self.weights}')
+
         self._p.add(self.profile, self._config['nspace']+1)
         self._config['shots'] = shots
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = opt.minimize(self._ssvqe_batch, coeff, method='powell')
+        optimized = opt.minimize(self._excite_batch, coeff, method=self.optimizer)
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
         self.profile = self._profiles_update() # type: ignore
         self._talk('\nFinal Excited State Energies:')
         for i in range(self._config['nspace']+1):
             self._talk(f'State_{i} Energy: {self._p[i].energy_total():18.15f}')
+
+        elapsed_time = str(datetime.datetime.now() - start_time)
+        self._talk(f'\nElapsed Time    : {elapsed_time.split(".", maxsplit=1)[0]}')
+
         return self.profile
 
     def _profiles_update(self):
@@ -148,3 +161,23 @@ class SSVQE(VQE):
             self._p[i].coeff = self.profile.coeff
             self._p[i].spin = self._measure_spin(self._p[i].circuit)
         return self._p
+
+    def _calculate_overlap(self):
+        no = self.profile.num_orb
+        qc = [QuantumCircuit(no*2, no*2) for _ in range(2)]
+        ancila = QuantumCircuit(1, 1)
+        for i in range(2):
+            self._config['state'] = i
+            self._initialize_circuit(qc[i])
+            self.ansatz.ansatz(qc[i], self._p[i], self._p[i].coeff)
+        qc_total = ancila.tensor(qc[0]).tensor(qc[1])
+
+        qc_total.h(0)
+        for i in range(1, no*2+1):
+            qc_total.ccx(i+no*2, i, 0)
+        qc_total.h(0)
+
+        backend = AerProvider().get_backend('qasm_simulator')
+        result = cast(dict[str, float],
+                        backend.run(qc_total, shots=self._config['shots']).result().get_counts())
+        print(result)

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyscf import gto
 from qc_practice import SSVQE
-from qc_practice.ansatz import SpinFlipUCCSD, HEA
+from qc_practice.ansatz import UpCCSD, HEA
 
 save_dir = '4-31g_test'
 
