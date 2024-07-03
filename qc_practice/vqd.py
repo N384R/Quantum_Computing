@@ -1,7 +1,7 @@
 from qc_practice import VQE
 from qc_practice.simulator import Simulator
 from qc_practice.simulator import QASM
-from .profile import Profiles
+from qc_practice.profile import Profiles
 
 class VQD(VQE):
     '''

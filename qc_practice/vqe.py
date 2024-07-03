@@ -19,7 +19,7 @@ from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
 from qc_practice.simulator.qasm import QASM
-from .profile import Profile
+from qc_practice.profile import Profile
 
 class VQE:
     '''

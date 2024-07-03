@@ -1,6 +1,5 @@
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
-from qc_practice.ansatz import Ansatz
 
 class QASM:
     'Class for running Quantum Assembly (QASM) simulator.'
@@ -33,8 +32,9 @@ class QASM:
         no = state1.num_orb
         qc = circuit_swap_test(state1, state2)
         qc.measure(0, 0)
-        result = self.backend.run(qc, shots=self.shots).result().get_counts()
+        result = self.backend.run(qc, shots=self.shots).result().get_counts()  # 지금 이녀석을 위한 자원이 없음
         overlap_sq = abs(result.get('0'*(4*no + 1)) / self.shots * 2 - 1)
+        overlap_sq = 0
         return overlap_sq
 
 def circuit_swap_test(state1, state2):
