@@ -18,7 +18,7 @@ from qc_practice.ansatz.uccsd import UpCCGSD
 from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
-from qc_practice.simulator import QASM
+from qc_practice.simulator.qasm import QASM
 from .profile import Profile
 
 class VQE:
@@ -40,7 +40,7 @@ class VQE:
         self.simulator = simulator
         self.profile: Profile = Profile(mol)
         self.hamiltonian = hamiltonian(self.profile)
-        self._config = {'iteration': 0, 'optimizer': 'powell', 'verbose': 2, 'parallel': False}
+        self._config = {'iteration': 0, 'optimizer': 'powell', 'parallel': False}
 
     @property
     def ansatz(self):
@@ -70,15 +70,6 @@ class VQE:
         self._config['optimizer'] = optimizer
 
     @property
-    def verbose(self) -> int:
-        'The verbosity level of the calculation.'
-        return self._config['verbose']
-
-    @verbose.setter
-    def verbose(self, verbose):
-        self._config['verbose'] = verbose
-
-    @property
     def parallel(self) -> bool:
         'The parallel flag for the calculation.'
         return self._config['parallel']
@@ -106,16 +97,19 @@ class VQE:
         'Decorator for the batch output.'
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
-            print(f"Iteration: {self.iteration()}, Energy: {energy:12.09f}",
+            print(f"Iteration: {self.iteration()}, Energy: {self.profile.energy_total():12.09f}",
                   end='\r', flush=True)
             return energy
         return wrapper
 
     @batch_output
-    def batch(self, coeff: list[float]):
+    def batch(self, coeff):
         'Performs the calculation for a given set of coefficients.'
         qc = self.circuit(coeff)
         energy = measure(qc, self.hamiltonian, self.simulator, parallel=self.parallel)
+        self.profile.energy_elec = energy
+        self.profile.coeff = coeff
+        self.profile.circuit = qc
         return energy
 
     @staticmethod
@@ -129,7 +123,7 @@ class VQE:
             start = datetime.datetime.now()
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
-            print(f'\nElapsed time: {elapsed.split(".", maxsplit=1)[0]}')
+            print(f'Elapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             return result
         return wrapper
 
@@ -144,8 +138,8 @@ class VQE:
         def wrapper(self, *args, **kwargs):
             print(f'State {self.profile.state}:')
             result = func(self, *args, **kwargs)
-            print('\n\n!!Successfully Converged!!')
-            print(f'State {self.profile.state} Total Energy: {result.energy_total():12.09f}\n')
+            print(f"Iteration: {self.iteration()}, Converged!!         ")
+            print(f'Total Energy: {result.energy_total():12.09f}\n')
             return result
         return wrapper
 
@@ -155,4 +149,5 @@ class VQE:
         optimized = self.ansatz.call_optimizer(self.batch, coeff, self.optimizer)
         self.profile.energy_elec = optimized.fun
         self.profile.coeff = optimized.x
+        self.profile.circuit = self.circuit(optimized.x)
         return self.profile

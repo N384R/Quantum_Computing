@@ -1,4 +1,3 @@
-from typing import Protocol
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
 from qc_practice.ansatz import Ansatz
@@ -29,39 +28,21 @@ class QASM:
         probability: float = counts / self.shots
         return probability
 
-    def swap_test(self, state1, state2, ansatz: Ansatz) -> float:
+    def swap_test(self, state1, state2) -> float:
         'Swap test for measuring the overlap between two states.'
-        qc = circuit_swap_test(state1, state2, ansatz)
+        no = state1.num_orb
+        qc = circuit_swap_test(state1, state2)
         qc.measure(0, 0)
         result = self.backend.run(qc, shots=self.shots).result().get_counts()
-        overlap_sq = abs(result.get('0') / self.shots * 2 - 1)
+        overlap_sq = abs(result.get('0'*(4*no + 1)) / self.shots * 2 - 1)
         return overlap_sq
 
-class StateVector:  ####need to build correctly
-    'Class for running State Vector simulator.'
-
-    def __init__(self):
-        self.backend = AerProvider().get_backend('statevector_simulator')
-
-    def run_simulator(self, qc, p_string) -> float:
-        'Run the State Vector simulator.'
-        result = self.backend.run(qc).result().get_statevector()
-        return result
-
-    def swap_test(self, state1, state2, ansatz) -> float:
-        'Swap test for measuring the overlap between two states.'
-        qc = circuit_swap_test(state1, state2, ansatz)
-        result = self.backend.run(qc).result().get_statevector()
-        overlap_sq = abs(result[0] * result[0].conj())
-        return overlap_sq
-
-def circuit_swap_test(state1, state2, ansatz: Ansatz):
+def circuit_swap_test(state1, state2):
     'Swap test circuit for measuring the overlap between two states.'
     no = state1.num_orb
-    qc = QuantumCircuit(1, 1)
+    qc: QuantumCircuit = QuantumCircuit(1, 1)
     for i, state in enumerate([state1, state2]):
-        qc2 = QuantumCircuit(no*2)
-        ansatz.ansatz(qc2, state1, state.coeff)
+        qc2 = state.circuit
         qc: QuantumCircuit = qc2.tensor(qc) # type: ignore
     qc.h(0)
     for i in range(1, no*2+1):

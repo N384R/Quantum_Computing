@@ -1,6 +1,6 @@
 from multiprocessing import Pool
 from qiskit import QuantumCircuit
-from ..simulator import Simulator
+from qc_practice.simulator import Simulator
 
 def measure(qc: QuantumCircuit, h_pauli, simulator: Simulator, parallel: bool = False):
     'Measure the expectation value of a Hamiltonian'

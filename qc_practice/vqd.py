@@ -34,7 +34,7 @@ class VQD(VQE):
         for i in range(self.profile.state):
             state1 = self.profile
             state2 = self._profiles[i]
-            overlap_sq = self.simulator.swap_test(state1, state2, self.ansatz)
+            overlap_sq = self.simulator.swap_test(state1, state2)
             energy += beta * overlap_sq
         return energy
 
@@ -49,7 +49,8 @@ class VQD(VQE):
             print(f'nstates: {self.nstates}\n')
             result = func(self, *args, **kwargs)
             print('Final State Energies:')
-            print(self.profile.energy_total())
+            for i, state in enumerate(self.profile):
+                print(f'State {i}: {state.energy_total():12.09f}')
             return result
         return wrapper
 

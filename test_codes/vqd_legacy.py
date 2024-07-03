@@ -1,7 +1,7 @@
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
 from qc_practice import VQE
-from .profile import Profiles
+from ..qc_practice.profile import Profiles
 
 class VQD(VQE):
     def __init__(self, mol, ansatz = None, simulator = None):
