@@ -31,8 +31,7 @@ class UCCSD:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
-    @staticmethod
-    def generate_coeff(profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=1e-5):
         'Generate UCCSD coefficients'
         no = profile.num_orb
         ne = profile.num_elec
@@ -47,8 +46,7 @@ class UCCSD:
 
         return [coeff] * count
 
-    @staticmethod
-    def mapping(profile, coeff):
+    def mapping(self, profile, coeff):
         'Generate UCCSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
@@ -105,8 +103,7 @@ class UCCSD:
 class UpCCSD(UCCSD):
     'paired Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
 
-    @staticmethod
-    def generate_coeff(profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=1e-5):
         'Generate Spin Flip UCCSD coefficients'
         no = profile.num_orb
         ne = profile.num_elec
@@ -124,8 +121,7 @@ class UpCCSD(UCCSD):
 
         return [coeff] * count
 
-    @staticmethod
-    def mapping(profile, coeff):
+    def mapping(self, profile, coeff):
         'Generate Spin Flip UCCSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
@@ -158,8 +154,7 @@ class UpCCSD(UCCSD):
 class UCCGSD(UCCSD):
     'Unitary Coupled Cluster Generalized Single and Double (UCCGSD) ansatz'
 
-    @staticmethod
-    def generate_coeff(profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=1e-5):
         'Generate UCCGSD coefficients'
         no = profile.num_orb
         count = 0
@@ -173,8 +168,7 @@ class UCCGSD(UCCSD):
 
         return [coeff] * count
 
-    @staticmethod
-    def mapping(profile, coeff):
+    def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
@@ -200,14 +194,13 @@ class UCCGSD(UCCSD):
 class UpCCGSD(UCCSD):
     'paired Unitary Coupled Cluster Generalized Single and Double (UpCCGSD) ansatz'
 
-    @staticmethod
-    def generate_coeff(profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=1e-5):
         'Generate UCCGSD coefficients'
         no = profile.num_orb
         count = 0
 
         for i in range(no):
-            for j in range(i, no):
+            for j in range(i+1, no):
                 count += 2
 
         for i, j in product(range(no), range(no)):
@@ -220,8 +213,7 @@ class UpCCGSD(UCCSD):
 
         return [coeff] * count
 
-    @staticmethod
-    def mapping(profile, coeff):
+    def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
@@ -243,7 +235,62 @@ class UpCCGSD(UCCSD):
                 uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
                 uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
 
-        for i in range(no-1):
+        for i in range(no):
+            for j in range(i+1, no):
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i+no}^ {i} {j+no} ' + '\n'
+
+        return JordanWignerMapper(uccsd_fermion)
+
+class kUpCCGSD(UCCSD):
+    'k-paired Unitary Coupled Cluster Generalized Single and Double (kUpCCGSD) ansatz'
+    def __init__(self, k=1):
+        self.k = k
+
+    def generate_coeff(self, profile, coeff=1e-5):
+        'Generate UCCGSD coefficients'
+        no = profile.num_orb
+        ne = profile.num_elec
+        count = 0
+
+        for i in range(no):
+            for j in range(i+1, no):
+                count += 2
+
+        for i, j in product(range(ne//2 + self.k), range(ne//2 + self.k)):
+            for _ in product(range(i+1, no), range(j+1, no)):
+                count += 1
+
+        for i in range(ne//2 + self.k):
+            for _ in range(i+1, no):
+                count += 1
+
+        return [coeff] * count
+
+    def mapping(self, profile, coeff):
+        'Generate UCCGSD ansatz Pauli strings'
+        uccsd_fermion = ''
+        no = profile.num_orb
+        ne = profile.num_elec
+        value = iter(coeff)
+        for i in range(no):
+            for j in range(i+1, no):
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j}^ {i} ' + '\n'
+
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i+no}^ {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {j+no}^ {i+no} ' + '\n'
+
+        for i, j in product(range(ne//2 + self.k), range(ne//2 + self.k)):
+            for k, l in product(range(i+1, no), range(j+1, no)):
+                val = next(value)
+                uccsd_fermion += f'{sign_p(val)} {abs(val):f} {k}^ {l+no}^ {i} {j+no} ' + '\n'
+                uccsd_fermion += f'{sign_m(val)} {abs(val):f} {i}^ {j+no}^ {k} {l+no} ' + '\n'
+
+        for i in range(ne//2 + self.k):
             for j in range(i+1, no):
                 val = next(value)
                 uccsd_fermion += f'{sign_p(val)} {abs(val):f} {i}^ {j+no}^ {j} {i+no} ' + '\n'

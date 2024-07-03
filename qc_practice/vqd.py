@@ -1,32 +1,66 @@
-from typing import cast
-from itertools import combinations
-import scipy.optimize as opt
-from qiskit import QuantumCircuit
-from qiskit_aer import AerProvider
-from qc_practice import SSVQE
+from qc_practice import VQE
+from qc_practice.simulator import Simulator
+from qc_practice.simulator import QASM
 from .profile import Profiles
 
-class VQD(SSVQE):
-    def __init__(self, mol, ansatz = None):
-        super().__init__(mol, ansatz = ansatz)
+class VQD(VQE):
+    '''
+    Variational Quantum Deflation (VQD).
 
-    def _excite_batch(self, coeff):
-        self._config['trial'] += 1
-        self._talk(f"\nIteration: {self._config['trial']}")
-        self._transition = self._electron_excitation(self.active_space)
-        for i in range(self._config['nspace']+1):
-            self._config['state'] = i
-            self.verbose, verbose = 0, self.verbose
-            self._p[i].energy_elec = self._batch(coeff)
-            self._p[i].transition = self._transition
-            self._p[i].circuit = self.profile.circuit
-            self._p[i].state = i
-            self.verbose = verbose
-            self._talk(f'State_{i} Energy: {self._p[i].energy_total():18.15f}')
-        weight_en = sum(self.weights[i] * self._p[i].energy_elec
-                        for i in range(self._config['nspace']+1))
+    Example:
+    >>> from pyscf import gto
+    >>> from qc_practice.ansatz import UCCSD
+    >>> from qc_practice.simulator import QASM
 
-        return weight_en
+    '''
+    def __init__(self, mol, ansatz = None, simulator: Simulator = QASM()):
+        super().__init__(mol, ansatz = ansatz, simulator = simulator)
+        self._profiles = None  #type: ignore
+        self.nstates = 2
 
-    def _calculate_overlap(self):
-        pass
+    @property
+    def nstates(self):
+        'The number of states for the calculation.'
+        return self._config['nstates']
+
+    @nstates.setter
+    def nstates(self, nstates):
+        self._config['nstates'] = nstates
+
+    def batch(self, coeff):
+        'Performs a batch calculation.'
+        energy = super().batch(coeff)
+        beta = 3.0
+        for i in range(self.profile.state):
+            state1 = self.profile
+            state2 = self._profiles[i]
+            overlap_sq = self.simulator.swap_test(state1, state2, self.ansatz)
+            energy += beta * overlap_sq
+        return energy
+
+    @staticmethod
+    def general_output(func):
+        'Decorator for the normal output.'
+        def wrapper(self, *args, **kwargs):
+            print(f'\nStarting {self.__class__.__name__} Calculation\n')
+            print(f'Ansatz: {self.ansatz.__class__.__name__}')
+            print(f'Simulator: {self.simulator.__class__.__name__}')
+            print(f'Optimizer: {self.optimizer}')
+            print(f'nstates: {self.nstates}\n')
+            result = func(self, *args, **kwargs)
+            print('Final State Energies:')
+            print(self.profile.energy_total())
+            return result
+        return wrapper
+
+    @general_output
+    def run(self):
+        'Performs the VQD calculation.'
+        self._profiles: Profiles = Profiles(self.profile, self.nstates)
+        for i in range(self.nstates):
+            self.profile.state = i
+            self._config['iteration'] = 0
+            super()._run()
+            self._profiles.update(self.profile)
+        self.profile = self._profiles  #type: ignore
+        return self.profile

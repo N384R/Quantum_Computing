@@ -15,9 +15,7 @@ _profiles_update: Updates the profiles with the calculated energies.
 '''
 
 import datetime
-from typing import cast
 from itertools import combinations
-import scipy.optimize as opt
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
 from qc_practice import VQE
@@ -27,10 +25,9 @@ class SSVQE(VQE):
     '''
     Class for running Subspace-Search Variational Quantum Eigensolver (SSVQE) on a given molecule.
     '''
-    def __init__(self, mol, ansatz = None):
+    def __init__(self, mol, ansatz = None, simulator = None):
         super().__init__(mol, ansatz = ansatz)
 
-        self._p = Profiles()
         self._config['trial'] = 0
         self._config['active_space'] = [1, 1]
         self._config['koopmans'] = False
@@ -73,14 +70,14 @@ class SSVQE(VQE):
         if ((k[1] > no - ne//2) or (k[0] > ne//2)):
             raise ValueError('Invalid active space. Please check the basis.')
 
-        self._config['nspace'] = k[0] * k[1] * 4
+        self._config['nstates'] = 1 + k[0] * k[1] * 2
         if not self.koopmans:
-            self._config['nspace'] += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
+            self._config['nstates'] += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
 
         if not self.weights:
-            self.weights = [self._config['nspace']+5]
-            for i in range(1, self._config['nspace'] + 1):
-                self.weights.append(self._config['nspace'] - i + 1)
+            self.weights = [self._config['nstates']+5]
+            for i in range(1, self._config['nstates']):
+                self.weights.append(self._config['nstates'] - i)
 
     def _electron_excitation(self, active_space):
         n = self.profile.num_elec//2 - active_space[0]
@@ -91,8 +88,12 @@ class SSVQE(VQE):
         occ_indices = alpha_indices[:occ] + beta_indices[:occ]
         vir_indices = alpha_indices[occ:vir+1] + beta_indices[occ:vir+1]
 
-        for i in occ_indices:
-            for j in vir_indices:
+        for i in alpha_indices[:occ]:
+            for j in alpha_indices[occ:vir+1]:
+                yield (i+n, j+n)
+
+        for i in beta_indices[:occ]:
+            for j in beta_indices[occ:vir+1]:
                 yield (i+n, j+n)
 
         if not self.koopmans:
@@ -116,17 +117,17 @@ class SSVQE(VQE):
         self._config['trial'] += 1
         self._talk(f"\nIteration: {self._config['trial']}")
         self._transition = self._electron_excitation(self.active_space)
-        for i in range(self._config['nspace']+1):
+        for i in range(self._config['nstates']):
             self._config['state'] = i
             self.verbose, verbose = 0, self.verbose
-            self._p[i].energy_elec = self._batch(coeff)
-            self._p[i].transition = self._transition
-            self._p[i].circuit = self.profile.circuit
-            self._p[i].state = i
+            self._config['profiles'][i].energy_elec = self._batch(coeff)
+            self._config['profiles'][i].transition = self._transition
+            self._config['profiles'][i].circuit = self.profile.circuit
+            self._config['profiles'][i].state = i
             self.verbose = verbose
-            self._talk(f'State_{i} Energy: {self._p[i].energy_total():18.15f}')
-        weight_en = sum(self.weights[i] * self._p[i].energy_elec
-                        for i in range(self._config['nspace']+1))
+            self._talk(f"State_{i} Energy: {self._config['profiles'][i].energy_total():18.15f}")
+        weight_en = sum(self.weights[i] * self._config['profiles'][i].energy_elec
+                        for i in range(self._config['nstates']))
 
         return weight_en
 
@@ -140,44 +141,41 @@ class SSVQE(VQE):
         self._talk(f'Koopmans Condition: {self.koopmans}')
         self._talk(f'Weights: {self.weights}')
 
-        self._p.add(self.profile, self._config['nspace']+1)
         self._config['shots'] = shots
+        self._config['profiles'] = Profiles(self.profile, self._config['nstates'])
         coeff = self.ansatz.generate_coeff(self.profile)
         optimized = self.ansatz.call_optimizer(self._excite_batch, coeff, self.optimizer)
         self._talk('\n!!Successfully Converged!!')
         self.profile.coeff = optimized.x
-        self.profile = self._profiles_update() # type: ignore
+        self.profile = self._update_profile() # type: ignore
         self._talk('\nFinal Excited State Energies:')
-        for i in range(self._config['nspace']+1):
-            self._talk(f'State_{i} Energy: {self._p[i].energy_total():18.15f}')
+        for i in range(self._config['nstates']):
+            self._talk(f"State_{i} Energy: {self._config['profiles'][i].energy_total():18.15f}")
 
         elapsed_time = str(datetime.datetime.now() - start_time)
         self._talk(f'\nElapsed Time    : {elapsed_time.split(".", maxsplit=1)[0]}')
 
         return self.profile
 
-    def _profiles_update(self):
-        for i in range(self._config['nspace']+1):
-            self._p[i].coeff = self.profile.coeff
-            self._p[i].spin = self._measure_spin(self._p[i].circuit)
-        return self._p
+    def _update_profile(self):
+        for i in range(self._config['nstates']):
+            self._config['profiles'][i].coeff = self.profile.coeff
+            circuit = self._config['profiles'][i].circuit
+            self._config['profiles'][i].spin = self._measure_spin(circuit)
+        return self._config['profiles']
 
-    def _calculate_overlap(self):
+    def _measure_overlap(self, qc1, qc2):
         no = self.profile.num_orb
-        qc = [QuantumCircuit(no*2, no*2) for _ in range(2)]
         ancila = QuantumCircuit(1, 1)
-        for i in range(2):
-            self._config['state'] = i
-            self._initialize_circuit(qc[i])
-            self.ansatz.ansatz(qc[i], self._p[i], self._p[i].coeff)
-        qc_total = ancila.tensor(qc[0]).tensor(qc[1])
-
-        qc_total.h(0)
+        qc3 = qc1.tensor(qc2).tensor(ancila)
+        qc3.h(0)
         for i in range(1, no*2+1):
-            qc_total.ccx(i+no*2, i, 0)
-        qc_total.h(0)
+            qc3.cswap(0, i, i+no*2)
+        qc3.h(0)
+        qc3.measure(0, 0)
 
         backend = AerProvider().get_backend('qasm_simulator')
-        result = cast(dict[str, float],
-                        backend.run(qc_total, shots=self._config['shots']).result().get_counts())
+        result = backend.run(qc3, shots=self._config['shots']).result().get_counts()
         print(result)
+        overlap_sq = abs(result.get('0') / self._config['shots'] * 2 - 1)
+        return overlap_sq

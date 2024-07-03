@@ -1,18 +1,23 @@
 import json
+from copy import deepcopy
 import numpy as np
 from qiskit import QuantumCircuit
+from qc_practice.measure.hamiltonian import pyscf_luncher
 
 class Profile:
-    def __init__(self):
+    def __init__(self, mol):
+        info = pyscf_luncher(mol)
+
+        self.num_orb = info['num_orb']
+        self.num_elec = info['num_elec']
+        self.energy_nucl = info['energy_nuc']
+        self.energy_elec = info['energy_elec']
+        self.qm = {'hcore': info['hcore_mo'], 'two_elec': info['two_elec_mo']}
+
         self.state: int = 0
-        self.num_orb: int = 0
-        self.num_elec: int = 0
-        self.energy_elec: float = 0.00
-        self.energy_nucl: float = 0.00
         self.spin: float = 0.00
         self.coeff: np.ndarray = np.array([])
         self.circuit: QuantumCircuit = QuantumCircuit()
-
 
     def energy_total(self):
         return self.energy_elec + self.energy_nucl
@@ -28,19 +33,6 @@ class Profile:
             'energy_nucl': self.energy_nucl,
             'circuit': self.circuit,
         }
-
-    def copy(self):
-        profile = Profile()
-        profile.state = self.state
-        profile.spin = self.spin
-        profile.num_orb = self.num_orb
-        profile.num_elec = self.num_elec
-        profile.coeff = self.coeff
-        profile.energy_elec = self.energy_elec
-        profile.energy_nucl = self.energy_nucl
-        profile.circuit = self.circuit
-
-        return profile
 
     def save(self, filename):
         def convert(o):
@@ -66,8 +58,8 @@ class Profile:
         return f'{mult}_{state_number}'
 
 class Profiles:
-    def __init__(self):
-        self.profiles = []
+    def __init__(self, p, nstates=1):
+        self.profiles = self._generate_profiles(p, nstates)
 
     def __iter__(self):
         return iter(self.profiles)
@@ -78,9 +70,15 @@ class Profiles:
     def __len__(self):
         return len(self.profiles)
 
-    def add(self, profile, nroots):
-        for _ in range(nroots):
-            self.profiles.append(profile.copy())
+    @staticmethod
+    def _generate_profiles(p, nstates):
+        profiles = []
+        for _ in range(nstates):
+            profiles.append(deepcopy(p))
+        return profiles
+
+    def update(self, profile1):
+        self.profiles[profile1.state] = deepcopy(profile1)
 
     def show(self):
         return [profile.show() for profile in self.profiles]

@@ -1,17 +1,19 @@
 #%%
 from pyscf import gto
 from qc_practice import SSVQE
-from qc_practice.ansatz import SP, RSP
+from qc_practice.ansatz import SP, RSP, OSP
 from qiskit import QuantumCircuit
+from qc_practice.ansatz.uccsd import UpCCGSD
 from qc_practice.profile import Profile
 
-sp = SP(depth=3)
+sp = UpCCGSD()
 profile = Profile()
-profile.num_orb = 2
+profile.num_orb = 4
+profile.num_elec = 2
 qc = QuantumCircuit(profile.num_orb*2)
 coeff = sp.generate_coeff(profile)
-sp.ansatz(qc, profile, coeff)
-qc.draw('mpl')
+sp.mapping(profile, coeff).pauli_strings
+# qc.draw()
 
 #%%
 
