@@ -27,7 +27,7 @@ class UCCSD:
     'Unitary Coupled Cluster Single and Double (UCCSD) ansatz'
 
     @staticmethod
-    def call_optimizer(func, coeff, method):
+    def call_optimizer(func, coeff, method) -> opt.OptimizeResult:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 

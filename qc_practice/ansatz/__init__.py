@@ -1,6 +1,7 @@
 # __init__.py
 
 from typing import Protocol
+from scipy.optimize import OptimizeResult
 from .uccsd import UCCSD, UpCCSD, UCCGSD, UpCCGSD, kUpCCGSD
 from .hea import HEA
 from .sp import SP, RSP, OSP
@@ -12,3 +13,8 @@ class Ansatz(Protocol):
         ...
     def ansatz(self, qc, profile, coeff) -> None:
         'The ansatz for the calculation.'
+        ...
+    @staticmethod
+    def call_optimizer(func, coeff, method) -> OptimizeResult:
+        'Optimize the coefficients'
+        ...

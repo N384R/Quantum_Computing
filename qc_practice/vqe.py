@@ -14,11 +14,11 @@ import datetime
 from pyscf.gto import Mole
 from qiskit import QuantumCircuit
 from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz.uccsd import UpCCGSD
+from qc_practice.ansatz import UpCCGSD
 from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
-from qc_practice.simulator.qasm import QASM
+from qc_practice.simulator import QASM
 from qc_practice.profile import Profile
 
 class VQE:
@@ -48,16 +48,16 @@ class VQE:
         return self.__ansatz
 
     @ansatz.setter
-    def ansatz(self, ansatz):
+    def ansatz(self, ansatz: Ansatz):
         self.__ansatz = ansatz
 
     @property
-    def simulator(self) -> Simulator:
+    def simulator(self):
         'The simulator to be used for the calculation.'
         return self.__simulator
 
     @simulator.setter
-    def simulator(self, simulator):
+    def simulator(self, simulator: Simulator):
         self.__simulator = simulator
 
     @property
@@ -66,7 +66,7 @@ class VQE:
         return self._config['optimizer']
 
     @optimizer.setter
-    def optimizer(self, optimizer):
+    def optimizer(self, optimizer: str):
         self._config['optimizer'] = optimizer
 
     def iteration(self) -> int:
@@ -96,6 +96,9 @@ class VQE:
     @batch_output
     def batch(self, coeff):
         'Performs the calculation for a given set of coefficients.'
+        return self._batch(coeff)
+
+    def _batch(self, coeff):
         qc = self.circuit(coeff)
         energy = measure(qc, self.hamiltonian, self.simulator)
         self.profile.energy_elec = energy
@@ -114,6 +117,8 @@ class VQE:
             start = datetime.datetime.now()
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
+            print(f"Iteration: {self.iteration()}, Converged!!         ")
+            print(f'Total Energy: {result.energy_total():12.09f}\n')
             print(f'Elapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             return result
         return wrapper
@@ -123,18 +128,6 @@ class VQE:
         'Performs the VQE calculation.'
         return self._run()
 
-    @staticmethod
-    def normal_output(func):
-        'Decorator for the normal output.'
-        def wrapper(self, *args, **kwargs):
-            print(f'State {self.profile.state}:')
-            result = func(self, *args, **kwargs)
-            print(f"Iteration: {self.iteration()}, Converged!!         ")
-            print(f'Total Energy: {result.energy_total():12.09f}\n')
-            return result
-        return wrapper
-
-    @normal_output
     def _run(self):
         coeff = self.ansatz.generate_coeff(self.profile)
         optimized = self.ansatz.call_optimizer(self.batch, coeff, self.optimizer)

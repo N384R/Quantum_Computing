@@ -34,3 +34,8 @@ What is New:
     (scheduled)
     1. Spin-Orbit Coupling Measurement
     2. Equation-of-Motion UCCSD (EOM-UCCSD)
+
+Have to do:
+
+    1. Rebuild the Jordan Wigner Mapper
+    2. 
