@@ -1,3 +1,5 @@
+import numpy as np
+
 class PauliOperator:
     def __init__(self, pauli):
         if pauli not in ('X', 'Y', 'Z', 
@@ -18,7 +20,19 @@ class PauliOperator:
 
         pauli, sign = self.calculation(self.symbol, other.symbol)
         return PauliOperator(sign + pauli)
-    
+
+    @property
+    def matrix(self):
+        'The matrix representation of the Pauli operator.'
+        if self.symbol == 'X':
+            return np.array([[0, 1], [1, 0]])
+        elif self.symbol == 'Y':
+            return np.array([[0, -1j], [1j, 0]])
+        elif self.symbol == 'Z':
+            return np.array([[1, 0], [0, -1]])
+        elif self.symbol == 'I':
+            return np.array([[1, 0], [0, 1]])
+
     @staticmethod
     def calculation(pauli1, pauli2):
         rules = {

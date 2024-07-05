@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from .pauli_operator import PauliOperator
 
 class PauliString:
@@ -35,6 +36,14 @@ class PauliString:
 
     def get_symbol(self, pauli):
         return ''.join(f'{val}' for val in pauli.values())
+
+    @property
+    def matrix(self):
+        'The matrix representation of the Pauli string.'
+        matrix = np.array([[1]])
+        for value in self.pauli_string.values():
+            matrix = np.kron(value.matrix, matrix)
+        return matrix
 
     def __mul__(self, other):
         if not isinstance(other, PauliString):

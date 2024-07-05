@@ -27,14 +27,17 @@ class QASM:
         probability: float = counts / self.shots
         return probability
 
+    def get_overlap(self, state1, state2) -> float:
+        'Get the square of the overlap between two states.'
+        return self.swap_test(state1, state2)
+
     def swap_test(self, state1, state2) -> float:
         'Swap test for measuring the overlap between two states.'
         no = state1.num_orb
         qc = circuit_swap_test(state1, state2)
         qc.measure(0, 0)
-        result = self.backend.run(qc, shots=self.shots).result().get_counts()  # 지금 이녀석을 위한 자원이 없음
+        result = self.backend.run(qc, shots=self.shots).result().get_counts()
         overlap_sq = abs(result.get('0'*(4*no + 1)) / self.shots * 2 - 1)
-        overlap_sq = 0
         return overlap_sq
 
 def circuit_swap_test(state1, state2):

@@ -34,7 +34,7 @@ class VQD(VQE):
         for i in range(self.profile.state):
             state1 = self.profile
             state2 = self._profiles[i]
-            overlap_sq = self.simulator.swap_test(state1, state2)
+            overlap_sq = self.simulator.get_overlap(state1, state2)
             energy += beta * overlap_sq
         return energy
 

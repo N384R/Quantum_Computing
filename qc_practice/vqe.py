@@ -69,15 +69,6 @@ class VQE:
     def optimizer(self, optimizer):
         self._config['optimizer'] = optimizer
 
-    @property
-    def parallel(self) -> bool:
-        'The parallel flag for the calculation.'
-        return self._config['parallel']
-
-    @parallel.setter
-    def parallel(self, parallel: bool):
-        self._config['parallel'] = parallel
-
     def iteration(self) -> int:
         'Increments the iteration count.'
         self._config['iteration'] += 1
@@ -106,7 +97,7 @@ class VQE:
     def batch(self, coeff):
         'Performs the calculation for a given set of coefficients.'
         qc = self.circuit(coeff)
-        energy = measure(qc, self.hamiltonian, self.simulator, parallel=self.parallel)
+        energy = measure(qc, self.hamiltonian, self.simulator)
         self.profile.energy_elec = energy
         self.profile.coeff = coeff
         self.profile.circuit = qc

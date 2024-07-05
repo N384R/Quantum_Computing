@@ -10,6 +10,6 @@ class Simulator(Protocol):
     def run_simulator(self, qc, p_string) -> float:
         'Run the simulator.'
         ...
-    def swap_test(self, state1: Profile, state2: Profile) -> float:
-        'Swap test for measuring the overlap between two states.'
+    def get_overlap(self, state1: Profile, state2: Profile) -> float:
+        'Get the square of the overlap between two states.'
         ...

@@ -20,28 +20,28 @@ class PauliOperator:
             return np.array([[0, 0], [1, 0]])
         else:
             raise ValueError('Invalid Pauli operator')
-    
+
     def __add__(self, other):
         try:
             return self.matrix + other.matrix
-        except:
+        except AttributeError:
             return self.matrix + other
-        
+
     def __radd__(self, other):
         return other + self.matrix
-    
+
     def __sub__(self, other):
         try:
             return self.matrix - other.matrix
-        except:
+        except AttributeError:
             return self.matrix - other
-    
+
     def __mul__(self, other):
         try:
             return np.dot(self.matrix, other.matrix)
-        except:
+        except AttributeError:
             return self.matrix * other
-    
+
     def __rmul__(self, other):
         return other * self.matrix
 

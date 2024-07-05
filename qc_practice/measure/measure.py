@@ -1,17 +1,11 @@
-from multiprocessing import Pool
+# from multiprocessing import Pool
 from qiskit import QuantumCircuit
 from qc_practice.simulator import Simulator
 
-def measure(qc: QuantumCircuit, h_pauli, simulator: Simulator, parallel: bool = False):
+def measure(qc: QuantumCircuit, h_pauli, simulator: Simulator):
     'Measure the expectation value of a Hamiltonian'
     tasks = [(qc, p_string, values, simulator) for p_string, values in h_pauli.items()]
-    if parallel:
-        with Pool(4) as pool:
-            results_async = pool.map_async(single_measure, tasks)
-            results = results_async.get()
-    else:
-        results = [single_measure(task) for task in tasks]
-    energy = sum(results)
+    energy = sum(single_measure(task) for task in tasks)
     return energy
 
 def single_measure(args: tuple[QuantumCircuit, dict, complex, Simulator]):
