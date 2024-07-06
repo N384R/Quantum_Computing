@@ -116,9 +116,10 @@ class VQE:
     def batch_output(func):
         'Decorator for the batch output.'
         def wrapper(self, *args, **kwargs):
-            print(f"Iteration: {self.iteration()}", end=', ')
             energy = func(self, *args, **kwargs)
-            print(f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
+            print(f"Iteration: {self.iteration()}, " +
+                  f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
+
             return energy
         return wrapper
 

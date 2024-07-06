@@ -159,11 +159,11 @@ class UCCGSD(UCCSD):
         no = profile.num_orb
         count = 0
         for i in range(no):
-            for j in range(i, no):
+            for j in range(i+1, no):
                 count += 2
 
         for i, j in product(range(no), range(no)):
-            for _ in product(range(i, no), range(j, no)):
+            for _ in product(range(i+1, no), range(j+1, no)):
                 count += 1
 
         return [coeff] * count
@@ -204,7 +204,7 @@ class UpCCGSD(UCCSD):
                 count += 2
 
         for i, j in product(range(no), range(no)):
-            for _ in product(range(i, no), range(j, no)):
+            for _ in product(range(i+1, no), range(j+1, no)):
                 count += 1
 
         for i in range(no-1):
