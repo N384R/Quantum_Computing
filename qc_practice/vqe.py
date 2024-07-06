@@ -14,7 +14,7 @@ import datetime
 from pyscf.gto import Mole
 from qiskit import QuantumCircuit
 from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz import UpCCGSD
+from qc_practice.ansatz import UCCSD
 from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
@@ -116,8 +116,8 @@ class VQE:
     def batch_output(func):
         'Decorator for the batch output.'
         def wrapper(self, *args, **kwargs):
-            energy = func(self, *args, **kwargs)
             print(f"Iteration: {self.iteration()}", end=', ')
+            energy = func(self, *args, **kwargs)
             print(f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
             return energy
         return wrapper
