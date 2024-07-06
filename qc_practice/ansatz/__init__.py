@@ -8,7 +8,7 @@ from .sp import SP, RSP, OSP
 
 class Ansatz(Protocol):
     'Protocol for the ansatz class.'
-    def generate_coeff(self, profile, coeff: float = 1e-5) -> list:
+    def generate_coeff(self, profile, coeff: float = 1e-5) -> list[float]:
         'Generate ansatz coefficients.'
         ...
     def ansatz(self, qc, profile, coeff) -> None:

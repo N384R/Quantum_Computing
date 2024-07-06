@@ -4,14 +4,16 @@ from qc_practice import VQE
 from qc_practice.ansatz import Ansatz
 from qc_practice.ansatz import UpCCGSD
 from qc_practice.simulator import Simulator
-from qc_practice.simulator import QASM
+from qc_practice.simulator import StateVector
 from qc_practice.profile import Profiles
 
 class SSVQE(VQE):
     '''
     Subspace-Search Variational Quantum Eigensolver (SSVQE).
     '''
-    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator=QASM()):
+    verbose_print = VQE.verbose_print
+
+    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator=StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self._profiles = None  #type: ignore
         self.koopmans = False
@@ -90,10 +92,10 @@ class SSVQE(VQE):
             return energy
         return wrapper
 
-    @state_output
-    def state_batch(self, coeff):
+    @verbose_print(state_output)
+    def _batch(self, coeff):
         'Performs the calculation for a given set of coefficients.'
-        return self._batch(coeff)
+        return super()._batch(coeff)
 
     @staticmethod
     def batch_output(func):
@@ -105,11 +107,11 @@ class SSVQE(VQE):
             return energy
         return wrapper
 
-    @batch_output
+    @verbose_print(batch_output)
     def batch(self, coeff):
         for state in range(self.nstates):
             self.profile.state = state
-            self.state_batch(coeff)
+            self._batch(coeff)
             self._profiles.update(self.profile)
         cost_func = sum(self.weights[i] * self._profiles[i].energy_elec
                         for i in range(self.nstates))
@@ -130,7 +132,7 @@ class SSVQE(VQE):
             start = datetime.datetime.now()
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
-            print('\n'*(self.nstates+1))
+            print(f"\x1b[{self.nstates+1}B")
             print('!!Successfully Converged!!\n')
             print('Final State Energies:')
             for i, state in enumerate(self.profile):
@@ -139,7 +141,7 @@ class SSVQE(VQE):
             return result
         return wrapper
 
-    @general_output
+    @verbose_print(general_output)
     def run(self):
         'Performs the SSVQE calculation.'
         self._profiles: Profiles = Profiles(self.profile, self.nstates)

@@ -18,7 +18,7 @@ from qc_practice.ansatz import UpCCGSD
 from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
-from qc_practice.simulator import QASM
+from qc_practice.simulator import StateVector
 from qc_practice.profile import Profile
 
 class VQE:
@@ -35,12 +35,12 @@ class VQE:
     >>> result = vqe.run()
     '''
 
-    def __init__(self, mol: Mole, ansatz: Ansatz = UpCCGSD(), simulator: Simulator = QASM()):
+    def __init__(self, mol: Mole, ansatz: Ansatz = UCCSD(), simulator: Simulator = StateVector()):
         self.ansatz = ansatz
         self.simulator = simulator
         self.profile: Profile = Profile(mol)
         self.hamiltonian = hamiltonian(self.profile)
-        self._config = {'iteration': 0, 'optimizer': 'powell', 'parallel': False}
+        self._config = {'iteration': 0, 'optimizer': 'powell', 'parallel': False, 'verbose': True}
 
     @property
     def ansatz(self):
@@ -69,6 +69,24 @@ class VQE:
     def optimizer(self, optimizer: str):
         self._config['optimizer'] = optimizer
 
+    @property
+    def parallel(self) -> bool:
+        'The parallel flag for the calculation.'
+        return self._config['parallel']
+
+    @parallel.setter
+    def parallel(self, parallel: bool):
+        self._config['parallel'] = parallel
+
+    @property
+    def verbose(self) -> bool:
+        'The verbose flag for the calculation.'
+        return self._config['verbose']
+
+    @verbose.setter
+    def verbose(self, verbose: bool):
+        self._config['verbose'] = verbose
+
     def iteration(self) -> int:
         'Increments the iteration count.'
         self._config['iteration'] += 1
@@ -84,23 +102,34 @@ class VQE:
         return qc
 
     @staticmethod
+    def verbose_print(decorator):
+        'print output regarding the verbose flag.'
+        def wrapper(func):
+            def inner_wrapper(self, *args, **kwargs):
+                if self.verbose:
+                    return decorator(func)(self, *args, **kwargs)
+                return func(self, *args, **kwargs)
+            return inner_wrapper
+        return wrapper
+
+    @staticmethod
     def batch_output(func):
         'Decorator for the batch output.'
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
-            print(f"Iteration: {self.iteration()}, Energy: {self.profile.energy_total():12.09f}",
-                  end='\r', flush=True)
+            print(f"Iteration: {self.iteration()}", end=', ')
+            print(f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
             return energy
         return wrapper
 
-    @batch_output
+    @verbose_print(batch_output)
     def batch(self, coeff):
         'Performs the calculation for a given set of coefficients.'
         return self._batch(coeff)
 
     def _batch(self, coeff):
         qc = self.circuit(coeff)
-        energy = measure(qc, self.hamiltonian, self.simulator)
+        energy = measure(qc, self.hamiltonian, self.simulator, self.parallel)
         self.profile.energy_elec = energy
         self.profile.coeff = coeff
         self.profile.circuit = qc
@@ -123,7 +152,7 @@ class VQE:
             return result
         return wrapper
 
-    @general_output
+    @verbose_print(general_output)
     def run(self):
         'Performs the VQE calculation.'
         return self._run()

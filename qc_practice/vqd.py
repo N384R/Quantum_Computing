@@ -3,7 +3,7 @@ from qc_practice import VQE
 from qc_practice.ansatz import Ansatz
 from qc_practice.ansatz import UpCCGSD
 from qc_practice.simulator import Simulator
-from qc_practice.simulator import QASM
+from qc_practice.simulator import StateVector
 from qc_practice.profile import Profiles
 
 class VQD(VQE):
@@ -19,7 +19,9 @@ class VQD(VQE):
     >>> vqd = VQD(mol, ansatz = UCCSD(), simulator = QASM())
     >>> result = vqd.run()
     '''
-    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator = QASM()):
+    verbose_print = VQE.verbose_print
+
+    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator = StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self._profiles = None  #type: ignore
         self.nstates = 2
@@ -64,7 +66,7 @@ class VQD(VQE):
             return result
         return wrapper
 
-    @normal_output
+    @verbose_print(normal_output)
     def _run(self):
         return super()._run()
 
@@ -87,7 +89,7 @@ class VQD(VQE):
             return result
         return wrapper
 
-    @general_output
+    @verbose_print(general_output)
     def run(self):
         'Performs the VQD calculation.'
         self._profiles: Profiles = Profiles(self.profile, self.nstates)
