@@ -181,3 +181,16 @@ for key, value in data.items():
 
 with open('data/H2_exact_PES.json', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=4)
+
+#%%
+
+import json
+import numpy as np
+from pyscf import gto, scf
+from pyscf import cc
+
+mol = gto.M(atom = f'H 0 0 0; H 0 0 0.7', basis = '4-31g')
+mf = scf.RHF(mol)
+mf.kernel()
+ccsd = cc.CCSD(mf)
+e = ccsd.kernel()

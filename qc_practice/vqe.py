@@ -97,7 +97,7 @@ class VQE:
         qc = QuantumCircuit(self.profile.num_orb*2, self.profile.num_orb*2)
         for i in range(self.profile.num_elec//2):
             qc.x(i)
-            qc.x(i + self.profile.num_elec)
+            qc.x(i + self.profile.num_orb)
         self.ansatz.ansatz(qc, self.profile, coeff)
         return qc
 

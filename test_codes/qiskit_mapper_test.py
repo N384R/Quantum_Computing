@@ -5,7 +5,7 @@ from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.units import DistanceUnit
 
 driver = PySCFDriver(
-    atom = "H 0 0 0; H 0 0 1.20",
+    atom = "H 0 0 0; H 0 0 0.70",
     basis = '4-31g',
     charge = 0,
     spin = 0,
@@ -18,4 +18,3 @@ mapper = JordanWignerMapper()
 qubit_jw_op = mapper.map(fermionic_op)
 print(fermionic_op)
 print(qubit_jw_op)
-

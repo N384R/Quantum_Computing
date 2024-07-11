@@ -28,7 +28,6 @@ def pyscf_luncher(mol):
 
 def hamiltonian(profile):
     '''Generate the Hamiltonian in the second quantization form.'''
-
     second_q = ''
     n = profile.num_orb
     for i, j in product(range(n), repeat=2):
@@ -37,7 +36,6 @@ def hamiltonian(profile):
         sign = '+' if coeff > 0 else ''
         second_q += f'{sign} {coeff:.16f} {i}^ {j}' + '\n'
         second_q += f'{sign} {coeff:.16f} {i+n}^ {j+n}' + '\n'
-
     for i, j, k, l in product(range(n), repeat=4):
         if abs(coeff := profile.qm['two_elec'][i, j, k, l]/2) < 1e-10:
             continue
@@ -46,5 +44,4 @@ def hamiltonian(profile):
         second_q += f'{sign} {coeff:.16f} {i}^ {k+n}^ {l+n} {j}' + '\n'
         second_q += f'{sign} {coeff:.16f} {i+n}^ {k}^ {l} {j+n}' + '\n'
         second_q += f'{sign} {coeff:.16f} {i+n}^ {k+n}^ {l+n} {j+n}' + '\n'
-
     return JordanWignerMapper(second_q)
