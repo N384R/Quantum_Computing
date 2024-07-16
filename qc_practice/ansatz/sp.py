@@ -4,7 +4,7 @@ from qiskit import QuantumCircuit
 
 def boundary(coeff):
     'Boundary condition'
-    return [(-np.pi, np.pi)] * len(coeff)
+    return [(-2*np.pi, 2*np.pi)] * len(coeff)
 
 class SP:
     'Symmetry Preserving (SP) ansatz'
@@ -16,31 +16,28 @@ class SP:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
-    def generate_coeff(self, profile, coeff=np.pi/2):
+    def generate_coeff(self, profile, coeff=0.0):
         'Generate SP ansatz coefficients'
         no = profile.num_orb
         count = 0
         for _ in range(self.depth):
             for _ in range(0, no*2-1, 2):
                 count += 2
-
             for _ in range(1, no*2-1, 2):
                 count += 2
-
         for _ in range(0, no*2-1, 2):
             count += 2
-
         return [coeff] * count
 
     @staticmethod
     def Agate(qc: QuantumCircuit, val1, val2, i):
         'Generate Agate'
         qc.cx(i+1, i)
-        qc.ry(-val1, i+1)
-        qc.rz(-val2 - np.pi/2, i+1)
+        qc.ry(-val1- np.pi/2, i+1)
+        qc.rz(-val2 - np.pi, i+1)
         qc.cx(i, i+1)
-        qc.rz(val2 + np.pi/2, i+1)
-        qc.ry(val1, i+1)
+        qc.rz(val2 + np.pi, i+1)
+        qc.ry(val1 + np.pi/2, i+1)
         qc.cx(i+1, i)
 
     def ansatz(self, qc, profile, coeff):
@@ -67,7 +64,7 @@ class RSP:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
-    def generate_coeff(self, profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=0.0):
         'Generate RSP ansatz coefficients'
         no = profile.num_orb
         count = 0
@@ -116,7 +113,7 @@ class OSP:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
-    def generate_coeff(self, profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=0.0):
         'Generate OSP ansatz coefficients'
         no = profile.num_orb
         count = 0

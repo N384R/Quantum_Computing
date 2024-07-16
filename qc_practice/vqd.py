@@ -1,7 +1,7 @@
 import datetime
 from qc_practice import VQE
 from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz import UpCCGSD
+from qc_practice.ansatz import eUCCSD
 from qc_practice.simulator import Simulator
 from qc_practice.simulator import StateVector
 from qc_practice.profile import Profiles
@@ -21,7 +21,7 @@ class VQD(VQE):
     '''
     verbose_print = VQE.verbose_print
 
-    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator = StateVector()):
+    def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator = StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self._profiles = None  #type: ignore
         self.nstates = 2

@@ -2,7 +2,7 @@ import datetime
 from qiskit import QuantumCircuit
 from qc_practice import VQE
 from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz import UpCCGSD
+from qc_practice.ansatz import eUCCSD
 from qc_practice.simulator import Simulator
 from qc_practice.simulator import StateVector
 from qc_practice.profile import Profiles
@@ -13,13 +13,11 @@ class SSVQE(VQE):
     '''
     verbose_print = VQE.verbose_print
 
-    def __init__(self, mol, ansatz: Ansatz = UpCCGSD(), simulator: Simulator=StateVector()):
+    def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator=StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self._profiles = None  #type: ignore
         self.koopmans = False
         self.active_space = [1, 1]
-        self.weights = [self.nstates + 5] + list(reversed(range(1, self.nstates)))
-        self.configuration_time = 0
 
     @property
     def active_space(self):
@@ -39,9 +37,7 @@ class SSVQE(VQE):
             ne = self.profile.num_elec
             if ((k[1] > no - ne//2) or (k[0] > ne//2)):
                 raise ValueError('Invalid active space. Please check the basis.')
-        self._config['nstates'] = 1 + k[0] * k[1] * 2
-        if not self.koopmans:
-            self._config['nstates'] += k[0] * (2 * k[0] - 1) * k[1] * (2 * k[1] - 1)
+        self._config['nstates'] = len(self._configuration())
         return self._config['nstates']
 
     @property
@@ -56,6 +52,8 @@ class SSVQE(VQE):
     @property
     def weights(self):
         'The weights for the calculation.'
+        if 'weights' not in self._config:
+            self._config['weights'] = [self.nstates * 10] + [range(1, self.nstates)][::-1]
         return self._config['weights']
 
     @weights.setter

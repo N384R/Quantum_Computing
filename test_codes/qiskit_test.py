@@ -60,7 +60,7 @@ from qiskit_algorithms import NumPyMinimumEigensolver, NumPyEigensolver
 from qiskit_algorithms import VQE
 from qiskit_algorithms.optimizers import POWELL
 from qiskit.primitives import Estimator
-from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
+from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD, PUCCSD 
 
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 
@@ -87,9 +87,11 @@ ansatz = UCCSD(
         problem_singlet.num_particles,
         mapper
     ),
+    generalized=True,
 )
 
-ansatz.decompose().decompose().decompose().draw('mpl')
+ansatz.excitation_list
+# ansatz.decompose().decompose().decompose().draw()
 
 # vqe_solver = VQE(Estimator(), ansatz, POWELL())
 # vqe_solver.initial_point = [0.0] * ansatz.num_parameters

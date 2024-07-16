@@ -11,7 +11,7 @@ import scipy.optimize as opt
 
 def boundary(coeff):
     'Boundary condition'
-    return [(-np.pi, np.pi)] * len(coeff)
+    return [(-2*np.pi, 2*np.pi)] * len(coeff)
 
 class HEA:
     'Hardware Efficient Ansatz (HEA)'
@@ -24,7 +24,7 @@ class HEA:
         'Optimize the coefficients'
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
-    def generate_coeff(self, profile, coeff=1e-5):
+    def generate_coeff(self, profile, coeff=0.0):
         'Generate HEA coefficients'
         no = profile.num_orb
         count = 0
