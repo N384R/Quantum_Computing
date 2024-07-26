@@ -6,7 +6,7 @@ The class has the following methods:
 generate_coeff: Generates UCCSD coefficients.
 ansatz: Generates UCCSD ansatz circuit.
 '''
-from itertools import product
+from itertools import product, combinations
 import numpy as np
 import scipy.optimize as opt
 from qc_practice.mapper.jordan_wigner import JordanWignerMapper
@@ -119,10 +119,8 @@ class eUCCSD(UCCSD):
             for _ in product(range(ne, no), repeat = 2):
                 count += 1
 
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for _ in range(start_j, no):
-                count += 1
+        for _ in combinations(range(no), 2):
+            count += 1
 
         return [coeff] * count
 
@@ -141,49 +139,44 @@ class eUCCSD(UCCSD):
             for k, l in product(range(ne, no), repeat = 2):
                 uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
 
-        for i in range(no-1):
-            start_j = max(i + 1, ne)
-            for j in range(start_j, no):
-                uccsd_fermion += doubles(next(value), i, j+no, i+no, j)
+        for i, j in combinations(range(no), 2):
+            uccsd_fermion += doubles(next(value), j, i+no, j+no, i)
 
         return JordanWignerMapper(uccsd_fermion)
 
 class UCCGSD(UCCSD):
     'Unitary Coupled Cluster Generalized Singles and Doubles (UCCGSD) ansatz'
 
-    def generate_coeff(self, profile, coeff=1):
+    def generate_coeff(self, profile, coeff=0.0):
         'Generate UCCGSD coefficients'
         no = profile.num_orb
-        ne = profile.num_elec // 2
         count = 0
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for _ in range(start_j, no):
-                count += 2
-        for i, j in product(range(no - 1), repeat = 2):
-            start_k = max(i + 1, ne)
-            start_l = max(j + 1, ne)
-            for _ in product(range(start_k, no), range(start_l, no)):
+        for _ in combinations(range(no), 2):
+            count += 2
+
+        for _ in combinations(range(no), 4):
+            count += 2
+
+        for i, j in product(range(no), repeat = 2):
+            for _ in product(range(i+1, no), range(j+1, no)):
                 count += 1
-        print(count)
+
         return [coeff] * count
 
     def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
-        ne = profile.num_elec // 2
         value = iter(coeff)
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for j in range(start_j, no):
-                uccsd_fermion += singles(next(value), i, j)
-                uccsd_fermion += singles(next(value), i+no, j+no)
+        for i, j in combinations(range(no), 2):
+            uccsd_fermion += singles(next(value), i, j)
 
-        for i, j in product(range(no - 1), repeat = 2):
-            start_k = max(i + 1, ne)
-            start_l = max(j + 1, ne)
-            for k, l in product(range(start_k, no), range(start_l, no)):
+        for i, j, k, l in combinations(range(no), 4):
+            uccsd_fermion += doubles(next(value), i, j, k, l)
+            uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+
+        for i, j in product(range(no), repeat = 2):
+            for k, l in product(range(i+1, no), range(j+1, no)):
                 uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
 
         return JordanWignerMapper(uccsd_fermion)
@@ -194,45 +187,40 @@ class eUCCGSD(UCCSD):
     def generate_coeff(self, profile, coeff=0.0):
         'Generate UCCGSD coefficients'
         no = profile.num_orb
-        ne = profile.num_elec // 2
         count = 0
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for _ in range(start_j, no):
-                count += 2
-        for i, j in product(range(no - 1), repeat = 2):
-            start_k = max(i + 1, ne)
-            start_l = max(j + 1, ne)
-            for _ in product(range(start_k, no), range(start_l, no)):
+        for _ in combinations(range(no), 2):
+            count += 2
+
+        for _ in combinations(range(no), 4):
+            count += 2
+
+        for i, j in product(range(no), repeat = 2):
+            for _ in product(range(i+1, no), range(j+1, no)):
                 count += 1
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for _ in range(start_j, no):
-                count += 1
+
+        for _ in combinations(range(no), 2):
+            count += 1
+
         return [coeff] * count
 
     def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
-        ne = profile.num_elec // 2
         value = iter(coeff)
-        for i in range(no - 1):
-            start_j = max(i + 1, ne)
-            for j in range(start_j, no):
-                uccsd_fermion += singles(next(value), i, j)
-                uccsd_fermion += singles(next(value), i+no, j+no)
+        for i, j in combinations(range(no), 2):
+            uccsd_fermion += singles(next(value), i, j)
 
-        for i, j in product(range(no - 1), repeat = 2):
-            start_k = max(i + 1, ne)
-            start_l = max(j + 1, ne)
-            for k, l in product(range(start_k, no), range(start_l, no)):
+        for i, j, k, l in combinations(range(no), 4):
+            uccsd_fermion += doubles(next(value), i, j, k, l)
+            uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+
+        for i, j in product(range(no), repeat = 2):
+            for k, l in product(range(i+1, no), range(j+1, no)):
                 uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
 
-        for i in range(no-1):
-            start_j = max(i + 1, ne)
-            for j in range(start_j, no):
-                uccsd_fermion += doubles(next(value), i, j+no, i+no, j)
+        for i, j in combinations(range(no), 2):
+            uccsd_fermion += doubles(next(value), i, j+no, i+no, j)
 
         return JordanWignerMapper(uccsd_fermion)
 
@@ -244,17 +232,17 @@ class kUpCCGSD(UCCSD):
     def generate_coeff(self, profile, coeff=0.0):
         'Generate UCCGSD coefficients'
         no = profile.num_orb
-        ne = profile.num_elec // 2
         count = 0
 
         for _ in range(self.k):
-            for i in range(no - 1):
-                start_j = max(i + 1, ne)
-                for _ in range(start_j, no):
-                    count += 2
-            for i in range(no - 1):
-                start_j = max(i + 1, ne)
-                for _ in range(start_j, no):
+            for _ in combinations(range(no), 2):
+                count += 3
+
+            for _ in combinations(range(no), 4):
+                count += 2
+
+            for i, j in product(range(no), repeat = 2):
+                for _ in product(range(i+1, no), range(j+1, no)):
                     count += 1
 
         return [coeff] * count
@@ -263,18 +251,20 @@ class kUpCCGSD(UCCSD):
         'Generate UCCGSD ansatz Pauli strings'
         uccsd_fermion = ''
         no = profile.num_orb
-        ne = profile.num_elec // 2
         value = iter(coeff)
         for _ in range(self.k):
-            for i in range(no - 1):
-                start_j = max(i + 1, ne)
-                for j in range(start_j, no):
-                    uccsd_fermion += singles(next(value), i, j)
-                    uccsd_fermion += singles(next(value), i+no, j+no)
+            for i, j in combinations(range(no), 2):
+                uccsd_fermion += singles(next(value), i, j)
 
-            for i in range(no - 1):
-                start_j = max(i + 1, ne)
-                for j in range(start_j, no):
-                    uccsd_fermion += doubles(next(value), i, i+no, j, j+no)
+            for i, j, k, l in combinations(range(no), 4):
+                uccsd_fermion += doubles(next(value), i, j, k, l)
+                uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+
+            for i, j in product(range(no), repeat = 2):
+                for k, l in product(range(i+1, no), range(j+1, no)):
+                    uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
+
+            for i, j in combinations(range(no), 2):
+                uccsd_fermion += doubles(next(value), i, i+no, j, j+no)
 
         return JordanWignerMapper(uccsd_fermion)

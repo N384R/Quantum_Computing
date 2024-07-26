@@ -37,7 +37,7 @@ class SSVQE(VQE):
             ne = self.profile.num_elec
             if ((k[1] > no - ne//2) or (k[0] > ne//2)):
                 raise ValueError('Invalid active space. Please check the basis.')
-        self._config['nstates'] = len(self._configuration())
+            self._config['nstates'] = len(self._configuration())
         return self._config['nstates']
 
     @property
@@ -53,7 +53,7 @@ class SSVQE(VQE):
     def weights(self):
         'The weights for the calculation.'
         if 'weights' not in self._config:
-            self._config['weights'] = [self.nstates * 10] + [range(1, self.nstates)][::-1]
+            self._config['weights'] = [self.nstates * 10] + list(range(1, self.nstates))[::-1]
         return self._config['weights']
 
     @weights.setter
@@ -76,8 +76,8 @@ class SSVQE(VQE):
         'Builds the quantum circuit for the calculation.'
         qc = QuantumCircuit(self.profile.num_orb*2, self.profile.num_orb*2)
         i, j = self._configuration()[self.profile.state]
-        qc.x(i)
-        qc.x(j)
+        self.profile.configuration = (i, j)  #type: ignore
+        qc.x([i, j])
         self.ansatz.ansatz(qc, self.profile, coeff)
         return qc
 
@@ -146,3 +146,46 @@ class SSVQE(VQE):
         super()._run()
         self.profile = self._profiles  #type: ignore
         return self.profile
+
+    def transition_matrix(self, operator):
+        'Calculates the transition matrix.'
+        def transition_matrix_element(state1, state2):
+            def measure_value(mode):
+                qc = superposition(state1, state2, mode)
+                self.ansatz.ansatz(qc, state1, state1.coeff)
+                result  = self.simulator.measure(qc, operator, self.parallel)
+                result -= self.simulator.measure(state1.circuit, operator, self.parallel) / 2
+                result -= self.simulator.measure(state2.circuit, operator, self.parallel) / 2
+                return result
+            real = measure_value('real')
+            imag = measure_value('imag')
+            return real + 1j * imag
+
+        matrix = [[transition_matrix_element(state1, state2)
+                   for state1 in self.profile]
+                  for state2 in self.profile]
+        return matrix
+
+def superposition(state1, state2, mode):
+    'Creates a superposition of two states.'
+    no = state1.num_orb
+    c1 = state1.configuration
+    c2 = state2.configuration
+    qc = QuantumCircuit(no*2, no*2)
+    if c1[0] != c2[0]:
+        qc.h(c1[0])
+        if mode == 'imag':
+            qc.sdg(c1[0])
+        qc.cx(c1[0], c2[0])
+        qc.x(c2[0])
+    else:
+        qc.x(c1[0])
+    if c1[1] != c2[1]:
+        qc.h(c1[1])
+        if mode == 'imag':
+            qc.sdg(c1[1])
+        qc.cx(c1[1], c2[1])
+        qc.x(c2[1])
+    else:
+        qc.x(c1[1])
+    return qc

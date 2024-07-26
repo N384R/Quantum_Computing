@@ -5,6 +5,9 @@ from qiskit import QuantumCircuit
 from qc_practice.measure.hamiltonian import pyscf_luncher
 
 class Profile:
+    '''
+    Class for storing the profile information of a molecule.
+    '''
     def __init__(self, mol):
         info = pyscf_luncher(mol)
 
@@ -12,7 +15,8 @@ class Profile:
         self.num_elec = info['num_elec']
         self.energy_nucl = info['energy_nuc']
         self.energy_elec = info['energy_elec']
-        self.qm = {'hcore': info['hcore_mo'], 'two_elec': info['two_elec_mo']}
+        self.qm = {'hcore': info['hcore_mo'], 'two_elec': info['two_elec_mo'],
+                   'coords': mol.atom_coords('Bohr')}
 
         self.state: int = 0
         self.spin: float = 0.00
@@ -20,9 +24,14 @@ class Profile:
         self.circuit: QuantumCircuit = QuantumCircuit()
 
     def energy_total(self):
+        'Returns the total energy of the system.'
         return self.energy_elec + self.energy_nucl
 
+    def __getitem__(self, key):
+        return getattr(self, key)
+
     def show(self):
+        'Returns the profile information.'
         return {
             'state': self.state,
             'spin': f'{self.spin:.02f}',
@@ -35,6 +44,7 @@ class Profile:
         }
 
     def save(self, filename):
+        'Saves the profile information to a JSON file.'
         def convert(o):
             if isinstance(o, np.ndarray):
                 return o.tolist()
@@ -78,12 +88,15 @@ class Profiles:
         return profiles
 
     def update(self, profile1):
+        'Update the profile with the new state.'
         self.profiles[profile1.state] = deepcopy(profile1)
 
     def show(self):
+        'Returns the profile information.'
         return [profile.show() for profile in self.profiles]
 
     def energy_total(self):
+        'Returns the total energy of the states.'
         return [profile.energy_total() for profile in self.profiles]
 
     def __repr__(self):

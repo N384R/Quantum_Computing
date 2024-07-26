@@ -194,3 +194,31 @@ mf = scf.RHF(mol)
 mf.kernel()
 ccsd = cc.CCSD(mf)
 e = ccsd.kernel()
+
+#%%
+import numpy as np
+from pyscf import gto, scf, ao2mo
+
+mol = gto.M(atom = 'Li 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mf = scf.RHF(mol)
+mf.kernel()
+
+num_orb = mf.get_hcore().shape[1]
+mo_coeff = np.asarray(mf.mo_coeff)
+dipole_ints = mol.intor('cint1e_r_sph', comp=3)
+
+dipole_matrix = {}
+for comp, dipole in enumerate(dipole_ints):
+    dipole_matrix[comp] = np.asarray(ao2mo.kernel(mol, mo_coeff, dipole, compact=False)
+                                     ).reshape(num_orb, num_orb, num_orb, num_orb)
+    print(dipole_matrix[comp])
+
+dm = mf.make_rdm1()
+dipole_moments_from_matrix = np.zeros(3)
+for comp, dipole in dipole_matrix.items():
+    dipole_moments_from_matrix[comp] = np.einsum('ij,ijkl,lk->', dm, dipole, dm)
+
+print("\nDipole moment from matrix elements (a.u.):", dipole_moments_from_matrix)
+
+dipole_moments_pyscf = mf.dip_moment(unit='au')
+# print("Dipole moment from PySCF (Debye):", dipole_moments_pyscf)

@@ -15,7 +15,6 @@ from pyscf.gto import Mole
 from qiskit import QuantumCircuit
 from qc_practice.ansatz import Ansatz
 from qc_practice.ansatz import UCCSD
-from qc_practice.measure.measure import measure
 from qc_practice.measure.hamiltonian import hamiltonian
 from qc_practice.simulator import Simulator
 from qc_practice.simulator import StateVector
@@ -119,7 +118,6 @@ class VQE:
             energy = func(self, *args, **kwargs)
             print(f"Iteration: {self.iteration()}, " +
                   f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
-
             return energy
         return wrapper
 
@@ -130,7 +128,7 @@ class VQE:
 
     def _batch(self, coeff):
         qc = self.circuit(coeff)
-        energy = measure(qc, self.hamiltonian, self.simulator, self.parallel)
+        energy = self.simulator.measure(qc, self.hamiltonian, self.parallel)
         self.profile.energy_elec = energy
         self.profile.coeff = coeff
         self.profile.circuit = qc

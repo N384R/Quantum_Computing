@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
 
@@ -7,6 +8,26 @@ class QASM:
     def __init__(self, shots = 10000):
         self.shots = shots
         self.backend = AerProvider().get_backend('qasm_simulator')
+
+    def measure(self, qc: QuantumCircuit, operator, parallel: bool) -> float:
+        'Measure the expectation value of an operator'
+        tasks = [(qc, p_string, values)
+                 for p_string, values in operator.items()]
+        if parallel:
+            with Pool(4) as pool:
+                energy = pool.map(self.single_measure, tasks)
+        else:
+            energy = [self.single_measure(task) for task in tasks]
+        return sum(energy)
+
+    def single_measure(self, args: tuple[QuantumCircuit, dict, complex]):
+        'Measure the expectation value of a Pauli string'
+        qc, p_string, values = args
+        if all(p.symbol == 'I' for p in p_string.values()):
+            return values.real
+        probability = self.run_simulator(qc, p_string)
+        expectation = float(probability.real) * values.real
+        return expectation
 
     def run_simulator(self, qc, p_string) -> float:
         'Run the QASM simulator.'
@@ -52,3 +73,4 @@ def circuit_swap_test(state1, state2):
         qc.cswap(0, i, i+no*2)
     qc.h(0)
     return qc
+
