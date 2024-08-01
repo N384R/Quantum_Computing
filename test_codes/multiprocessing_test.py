@@ -3,8 +3,8 @@ import time
 from multiprocessing import Pool
 import numpy as np
 from pyscf import gto
-from qc_practice import VQE
-from qc_practice.ansatz import UCCSD
+from jqc import VQE
+from jqc.ansatz import UCCSD
 
 def pes_calc(bond_length):
     bl = f'{bond_length:.02f}'

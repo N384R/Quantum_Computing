@@ -9,7 +9,7 @@ ansatz: Generates UCCSD ansatz circuit.
 from itertools import product, combinations
 import numpy as np
 import scipy.optimize as opt
-from qc_practice.mapper.jordan_wigner import JordanWignerMapper
+from jqc.mapper.jordan_wigner import JordanWignerMapper
 
 def sign_p(val):
     'Sign function'

@@ -2,7 +2,7 @@ import json
 from copy import deepcopy
 import numpy as np
 from qiskit import QuantumCircuit
-from qc_practice.measure.hamiltonian import pyscf_luncher
+from jqc.measure.hamiltonian import pyscf_luncher
 
 class Profile:
     '''

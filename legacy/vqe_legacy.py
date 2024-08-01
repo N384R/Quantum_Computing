@@ -21,9 +21,9 @@ from typing import cast
 from pyscf.gto import Mole
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
-from qc_practice.measure.measure import measure
-from qc_practice.measure.hamiltonian import pyscf_luncher, hamiltonian
-from ..qc_practice.profile import Profile
+from jqc.measure.measure import measure
+from jqc.measure.hamiltonian import pyscf_luncher, hamiltonian
+from ..jqc.vqe.profile import Profile
 
 class VQE:
     'Class for running Variational Quantum Eigensolver (VQE) on a given molecule.'

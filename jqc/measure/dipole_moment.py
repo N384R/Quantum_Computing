@@ -1,8 +1,8 @@
 from itertools import combinations
 import numpy as np
 from pyscf import ao2mo
-from qc_practice.mapper.jordan_wigner import JordanWignerMapper
-from qc_practice.ansatz.uccsd import sign_p
+from jqc.mapper.jordan_wigner import JordanWignerMapper
+from jqc.ansatz.uccsd import sign_p
 
 def dipole_moment(profile):
     'Generate the dipole moment in the second quantization form.'

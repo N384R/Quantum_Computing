@@ -1,10 +1,10 @@
 import datetime
-from qc_practice import VQE
-from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz import eUCCSD
-from qc_practice.simulator import Simulator
-from qc_practice.simulator import StateVector
-from qc_practice.profile import Profiles
+from jqc.vqe.vqe import VQE
+from jqc.ansatz import Ansatz
+from jqc.ansatz import eUCCSD
+from jqc.simulator import Simulator
+from jqc.simulator import StateVector
+from jqc.vqe.profile import Profiles
 
 class VQD(VQE):
     '''

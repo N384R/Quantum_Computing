@@ -2,7 +2,7 @@
 
 from typing import Protocol
 from qiskit import QuantumCircuit
-from qc_practice.profile import Profile
+from jqc.vqe.profile import Profile
 from .qasm import QASM
 from .state_vector import StateVector
 

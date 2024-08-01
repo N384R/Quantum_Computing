@@ -1,12 +1,13 @@
 #%%
-import imp
 from pyscf import gto, scf
+from pyscf import cc
 
-mol = gto.M(atom = 'Li 0 0 0; H 0 0 1.596', basis = 'sto-3g')
+mol = gto.M(atom = 'Li 0 0 0; H 0 0 1.6', basis = 'sto-3g')
 rhf = scf.RHF(mol)
-e = rhf.kernel()
-elec_energy = rhf.energy_elec()
-print(elec_energy)
+rhf.kernel()
+cc = cc.CCSD(rhf)
+cc.kernel()
+print('hello')
 
 #%%
 from pyscf import gto, scf
@@ -199,26 +200,29 @@ e = ccsd.kernel()
 import numpy as np
 from pyscf import gto, scf, ao2mo
 
-mol = gto.M(atom = 'Li 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
 mf = scf.RHF(mol)
 mf.kernel()
 
-num_orb = mf.get_hcore().shape[1]
 mo_coeff = np.asarray(mf.mo_coeff)
-dipole_ints = mol.intor('cint1e_r_sph', comp=3)
-
-dipole_matrix = {}
-for comp, dipole in enumerate(dipole_ints):
-    dipole_matrix[comp] = np.asarray(ao2mo.kernel(mol, mo_coeff, dipole, compact=False)
-                                     ).reshape(num_orb, num_orb, num_orb, num_orb)
-    print(dipole_matrix[comp])
+ao_disp = mol.intor('int1e_r', comp=3)
 
 dm = mf.make_rdm1()
-dipole_moments_from_matrix = np.zeros(3)
-for comp, dipole in dipole_matrix.items():
-    dipole_moments_from_matrix[comp] = np.einsum('ij,ijkl,lk->', dm, dipole, dm)
+elec_dip = np.einsum('xij,ji->x', ao_disp, dm)
+print("\nElec_dip (Debye):", elec_dip)
 
-print("\nDipole moment from matrix elements (a.u.):", dipole_moments_from_matrix)
+test = np.einsum('xij,ji->xij', ao_disp, dm)
+print(test)
+
+coords  = mol.atom_coords()
+charges = mol.atom_charges()
+nucl_dip = np.einsum('i,ix->x', charges, coords)
+print("Nucl_dip (Debye):", nucl_dip)
+
+mol_dip = elec_dip - nucl_dip
+print("mol_dip  (Debye):", mol_dip)
 
 dipole_moments_pyscf = mf.dip_moment(unit='au')
 # print("Dipole moment from PySCF (Debye):", dipole_moments_pyscf)
+
+# %%

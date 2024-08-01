@@ -18,8 +18,8 @@ import datetime
 from itertools import combinations
 from qiskit import QuantumCircuit
 from qiskit_aer import AerProvider
-from qc_practice import VQE
-from ..qc_practice.profile import Profiles
+from jqc import VQE
+from ..jqc.profile import Profiles
 
 class SSVQE(VQE):
     '''

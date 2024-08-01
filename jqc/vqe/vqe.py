@@ -13,12 +13,12 @@ run : Runs the VQE optimization.
 import datetime
 from pyscf.gto import Mole
 from qiskit import QuantumCircuit
-from qc_practice.ansatz import Ansatz
-from qc_practice.ansatz import UCCSD
-from qc_practice.measure.hamiltonian import hamiltonian
-from qc_practice.simulator import Simulator
-from qc_practice.simulator import StateVector
-from qc_practice.profile import Profile
+from jqc.ansatz import Ansatz
+from jqc.ansatz import UCCSD
+from jqc.measure.hamiltonian import hamiltonian
+from jqc.simulator import Simulator
+from jqc.simulator import StateVector
+from jqc.vqe.profile import Profile
 
 class VQE:
     '''

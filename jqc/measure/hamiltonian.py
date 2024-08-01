@@ -1,7 +1,7 @@
 from itertools import product
 import numpy as np
 from pyscf import ao2mo, scf
-from qc_practice.mapper.jordan_wigner import JordanWignerMapper
+from jqc.mapper.jordan_wigner import JordanWignerMapper
 
 def pyscf_luncher(mol):
     '''Run PySCF to get the Hamiltonian information.'''
