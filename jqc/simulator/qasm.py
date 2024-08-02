@@ -73,4 +73,3 @@ def circuit_swap_test(state1, state2):
         qc.cswap(0, i, i+no*2)
     qc.h(0)
     return qc
-

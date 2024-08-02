@@ -16,7 +16,7 @@ def pyscf_luncher(mol):
     result = {
         'hcore_mo': c.T @ hcore @ c,
         'num_elec': mol.nelectron,
-        'num_orb': hcore.shape[0],
+        'num_orb' : hcore.shape[0],
         'two_elec_mo': np.asarray(ao2mo.kernel(mol, c, two_elec, compact=False)).reshape(
             (hcore.shape[0], hcore.shape[0], hcore.shape[0], hcore.shape[0]))
     }

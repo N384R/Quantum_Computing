@@ -65,8 +65,8 @@ from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD, PUCCSD
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 
 driver = PySCFDriver(
-    atom = "H 0 0 0; H 0 0 0.7",
-    basis = '4-31g',
+    atom = "Li 0 0 0; H 0 0 1.60",
+    basis = 'sto-3g',
     charge = 0,
     spin = 0,
     unit = DistanceUnit.ANGSTROM,
@@ -90,15 +90,14 @@ ansatz = UCCSD(
     generalized=True,
 )
 
-ansatz.excitation_list
 # ansatz.decompose().decompose().decompose().draw()
 
-# vqe_solver = VQE(Estimator(), ansatz, POWELL())
-# vqe_solver.initial_point = [0.0] * ansatz.num_parameters
+vqe_solver = VQE(Estimator(), ansatz, POWELL())
+vqe_solver.initial_point = [0.0] * ansatz.num_parameters
 
-# calc = GroundStateEigensolver(mapper, vqe_solver)
-# res = calc.solve(problem_singlet)
-# print(res)
+calc = GroundStateEigensolver(mapper, vqe_solver)
+res = calc.solve(problem_singlet)
+print(res)
 
 # calc = GroundStateEigensolver(mapper, numpy_solver)
 # res = calc.solve(es_problem)
