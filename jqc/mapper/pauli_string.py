@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from .pauli_operator import PauliOperator
+from .pauli_operator import Pauli
 
 class PauliString:
     def __init__(self, pauli=None):
@@ -44,6 +44,11 @@ class PauliString:
         for value in self.pauli_string.values():
             matrix = np.kron(value.matrix, matrix)
         return matrix
+
+    @property
+    def count_iden(self):
+        'The number of identity operators in the Pauli string.'
+        return sum(1 for val in self.pauli_string.values() if val.symbol == 'I')
 
     def __mul__(self, other):
         if not isinstance(other, PauliString):
@@ -113,12 +118,12 @@ class PauliStrings:
 
 
 if __name__ == '__main__':
-    string1 = PauliString([PauliOperator('Z'), PauliOperator('iX'),
-                           PauliOperator('-Y'), PauliOperator('I')])
+    string1 = PauliString([Pauli('Z'), Pauli('iX'),
+                           Pauli('-Y'), Pauli('I')])
     print('1:', string1)
 
-    string2 = PauliString([PauliOperator('Z'), PauliOperator('Z'),
-                            PauliOperator('X'), PauliOperator('X')])
+    string2 = PauliString([Pauli('Z'), Pauli('Z'),
+                            Pauli('X'), Pauli('X')])
     print('2:', string2)
 
     string3 = string1 * string2
@@ -136,8 +141,8 @@ if __name__ == '__main__':
     string7 = string4 * string5
     print('7:', string7.paulistrings)
 
-    string8 = PauliString([PauliOperator('Z'), PauliOperator('Z'),
-                            PauliOperator('X'), PauliOperator('X')])
+    string8 = PauliString([Pauli('Z'), Pauli('Z'),
+                            Pauli('X'), Pauli('X')])
 
 
     if string2 == string8:

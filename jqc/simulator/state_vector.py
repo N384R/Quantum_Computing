@@ -1,7 +1,9 @@
 from multiprocessing import Pool
+import time
 import numpy as np
-from qiskit.quantum_info import Statevector
+from qiskit.quantum_info import Statevector, partial_trace
 from qiskit import QuantumCircuit
+from jqc.mapper.pauli_string import PauliString
 
 class StateVector:
     'Class for running State Vector simulator.'
@@ -18,19 +20,21 @@ class StateVector:
             energy = sum(self.single_measure(task) for task in tasks)
         return energy
 
-    def single_measure(self, args: tuple[np.ndarray, dict, complex]):
+    def single_measure(self, args: tuple[np.ndarray, PauliString, complex]):
         'Measure the expectation value of a Pauli string'
         statevector, p_string, values = args
-        if all(p.symbol == 'I' for p in p_string.values()):
-            return values.real
-        probability = self.run_simulator(statevector, p_string)
+        print(f'\n{p_string}')
+        if p_string.count_iden > 2:
+            start = time.time()
+            probability = self.get_rdm_trace(statevector, p_string)
+            rdm_time = time.time()-start
+            print(f'rdm time   : {rdm_time:.06f}')
+        else:
+            start = time.time()
+            probability = statevector.conj().T @ p_string.matrix @ statevector
+            print(f'normal time: {time.time()-start:.06f}')
         expectation = float(probability.real) * values.real
         return expectation
-
-    def run_simulator(self, statevector, p_string) -> float:
-        'Run the State Vector simulator.'
-        probability = np.dot(statevector.conj().T, np.dot(p_string.matrix, statevector))
-        return float(probability.real)
 
     def get_overlap(self, state1, state2) -> float:
         'Get the square of the overlap between two states.'
@@ -42,8 +46,16 @@ class StateVector:
     @staticmethod
     def get_statevector(qc) -> np.ndarray:
         'Get the state vector of a quantum circuit.'
-        statevector: np.ndarray = np.asarray(Statevector(qc)).reshape(-1, 1)
-        real_part = np.where(np.abs(statevector.real) < 1e-15, 0, statevector.real)
-        imag_part = np.where(np.abs(statevector.imag) < 1e-15, 0, statevector.imag)
-        statevector = real_part + 1j * imag_part
-        return statevector
+        statevector = Statevector(qc).data.reshape(-1, 1)
+        real_part = np.where(abs(statevector.real) < 1e-15, 0, statevector)
+        imag_part = np.where(abs(statevector.imag) < 1e-15, 0, statevector)
+        return real_part + 1j * imag_part
+
+    @staticmethod
+    def get_rdm_trace(statevector, p_string):
+        'Get the reduced density matrix of a quantum circuit.'
+        reduce_idx = [idx for idx, pauli in p_string.items() if pauli.symbol == 'I']
+        left_pauli = [pauli for pauli in p_string.values()   if pauli.symbol != 'I']
+        reduced_density_matrix = partial_trace(statevector, reduce_idx).data
+        reduced_operator = PauliString(left_pauli).matrix
+        return np.trace(reduced_density_matrix @ reduced_operator)

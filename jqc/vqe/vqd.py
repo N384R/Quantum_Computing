@@ -23,7 +23,7 @@ class VQD(VQE):
 
     def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator = StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
-        self._profiles = None  #type: ignore
+        self.profiles = None  #type: ignore
         self.nstates = 2
         self.beta = 3.0
 
@@ -50,7 +50,7 @@ class VQD(VQE):
         energy = super().batch(coeff)
         for i in range(self.profile.state):
             state1 = self.profile
-            state2 = self._profiles[i]
+            state2 = self.profiles[i]
             overlap_sq = self.simulator.get_overlap(state1, state2)
             energy += self.beta * overlap_sq
         return energy
@@ -83,20 +83,20 @@ class VQD(VQE):
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
             print('Final State Energies:')
-            for i, state in enumerate(self.profile):
+            for i, state in enumerate(self.profiles):
                 print(f'State {i}: {state.energy_total():12.09f}')
             print(f'\nElapsed time: {elapsed.split(".", maxsplit=1)[0]}')
+            del self.profile
             return result
         return wrapper
 
     @verbose_print(general_output)
     def run(self):
         'Performs the VQD calculation.'
-        self._profiles: Profiles = Profiles(self.profile, self.nstates)
+        self.profiles: Profiles = Profiles(self.profile, self.nstates)
         for i in range(self.nstates):
             self.profile.state = i
             self._config['iteration'] = 0
             self._run()
-            self._profiles.update(self.profile)
-        self.profile = self._profiles  #type: ignore
-        return self.profile
+            self.profiles.update(self.profile)
+        return self.profiles

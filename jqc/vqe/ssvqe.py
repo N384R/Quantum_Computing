@@ -15,7 +15,7 @@ class SSVQE(VQE):
 
     def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator=StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
-        self._profiles = None  #type: ignore
+        self.profiles = None  #type: ignore
         self.koopmans = False
         self.active_space = [1, 1]
 
@@ -110,8 +110,8 @@ class SSVQE(VQE):
         for state in range(self.nstates):
             self.profile.state = state
             self._batch(coeff)
-            self._profiles.update(self.profile)
-        cost_func = sum(self.weights[i] * self._profiles[i].energy_elec
+            self.profiles.update(self.profile)
+        cost_func = sum(self.weights[i] * self.profiles[i].energy_elec
                         for i in range(self.nstates))
         return cost_func
 
@@ -133,19 +133,19 @@ class SSVQE(VQE):
             print(f"\x1b[{self.nstates+1}B")
             print('!!Successfully Converged!!\n')
             print('Final State Energies:')
-            for i, state in enumerate(self.profile):
+            for i, state in enumerate(self.profiles):
                 print(f'State {i}: {state.energy_total():12.09f}')
             print(f'\nElapsed time: {elapsed.split(".", maxsplit=1)[0]}')
+            del self.profile
             return result
         return wrapper
 
     @verbose_print(general_output)
     def run(self):
         'Performs the SSVQE calculation.'
-        self._profiles: Profiles = Profiles(self.profile, self.nstates)
+        self.profiles: Profiles = Profiles(self.profile, self.nstates)
         super()._run()
-        self.profile = self._profiles  #type: ignore
-        return self.profile
+        return self.profiles
 
     def transition_matrix(self, operator):
         'Calculates the transition matrix.'

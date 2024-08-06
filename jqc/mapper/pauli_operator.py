@@ -1,6 +1,6 @@
 import numpy as np
 
-class PauliOperator:
+class Pauli:
     def __init__(self, pauli):
         if pauli not in ('X', 'Y', 'Z', 
                          'iX', 'iY', 'iZ', 
@@ -12,14 +12,14 @@ class PauliOperator:
         self.symbol = pauli
 
     def __mul__(self, other):
-        if not isinstance(other, PauliOperator):
+        if not isinstance(other, Pauli):
             print("Error: Invalid Pauli Operator")
             exit()
         if self.symbol == other.symbol and 'i' not in self.symbol:
-            return PauliOperator('I')
+            return Pauli('I')
 
         pauli, sign = self.calculation(self.symbol, other.symbol)
-        return PauliOperator(sign + pauli)
+        return Pauli(sign + pauli)
 
     @property
     def matrix(self):
@@ -47,8 +47,8 @@ class PauliOperator:
             ('Z', 'I'): ('Z', ''),
         }
 
-        sign1, op1 = PauliOperator.extract(pauli1)
-        sign2, op2 = PauliOperator.extract(pauli2)
+        sign1, op1 = Pauli.extract(pauli1)
+        sign2, op2 = Pauli.extract(pauli2)
 
         if (op1, op2) in rules:
             _op, sign3 = rules[(op1, op2)]
@@ -58,7 +58,7 @@ class PauliOperator:
             _op = 'I'
             sign3 = ''
 
-        _sign = PauliOperator.calc_sign(sign1, sign2, sign3)
+        _sign = Pauli.calc_sign(sign1, sign2, sign3)
         return _op, _sign
 
     @staticmethod
@@ -93,10 +93,10 @@ class PauliOperator:
 
 
 if __name__ == "__main__":
-    X = PauliOperator('X')
-    Y = PauliOperator('Y')
-    Z = PauliOperator('Z')
-    iZ = PauliOperator('iZ')
+    X = Pauli('X')
+    Y = Pauli('Y')
+    Z = Pauli('Z')
+    iZ = Pauli('iZ')
 
     test = iZ * Z
     print(test)

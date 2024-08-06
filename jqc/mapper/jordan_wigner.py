@@ -1,6 +1,6 @@
 from .fermion import Fermion
 from .fermionic_sort import FermionicSort
-from .pauli_operator import PauliOperator
+from .pauli_operator import Pauli
 from .pauli_string import PauliString, PauliStrings
 
 class _JordanWigner:
@@ -20,19 +20,19 @@ class _JordanWigner:
 
         num = fermion.num
         for i in range(num):
-            z_string[i] = PauliOperator('Z')
+            z_string[i] = Pauli('Z')
 
         if num < self.maximum:
             for i in range(num+1, self.maximum+1):
-                i_string[i] = PauliOperator('I')
+                i_string[i] = Pauli('I')
 
         for key, value in z_string.items():
             paulistring1[key] = value
             paulistring2[key] = value
 
-        paulistring1[num] = PauliOperator('X')
+        paulistring1[num] = Pauli('X')
         operator_type = '-iY' if fermion.type == 'creation' else 'iY'
-        paulistring2[num] = PauliOperator(operator_type)
+        paulistring2[num] = Pauli(operator_type)
 
         for key, value in i_string.items():
             paulistring1[key] = value
@@ -101,10 +101,10 @@ class JordanWigner():
             count_m, count_i = symbol.count('-'), symbol.count('i')
             if count_m == 1:
                 coeff *= -1
-                pauli[key] *= PauliOperator('-I')
+                pauli[key] *= Pauli('-I')
             if count_i == 1:
                 coeff *= 1j
-                pauli[key] *= PauliOperator('-iI')
+                pauli[key] *= Pauli('-iI')
         pauli.symbol = pauli.get_symbol(pauli)
         return coeff, pauli
 
