@@ -23,16 +23,10 @@ class StateVector:
     def single_measure(self, args: tuple[np.ndarray, PauliString, complex]):
         'Measure the expectation value of a Pauli string'
         statevector, p_string, values = args
-        print(f'\n{p_string}')
         if p_string.count_iden > 2:
-            start = time.time()
             probability = self.get_rdm_trace(statevector, p_string)
-            rdm_time = time.time()-start
-            print(f'rdm time   : {rdm_time:.06f}')
         else:
-            start = time.time()
             probability = statevector.conj().T @ p_string.matrix @ statevector
-            print(f'normal time: {time.time()-start:.06f}')
         expectation = float(probability.real) * values.real
         return expectation
 

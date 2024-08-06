@@ -159,7 +159,7 @@ class VQE:
     def _run(self):
         coeff = self.ansatz.generate_coeff(self.profile)
         optimized = self.ansatz.call_optimizer(self.batch, coeff, self.optimizer)
-        self.profile.energy_elec = optimized.fun
+        self.profile.energy_elec = float(optimized.fun)
         self.profile.coeff = optimized.x
         self.profile.circuit = self.circuit(optimized.x)
         return self.profile

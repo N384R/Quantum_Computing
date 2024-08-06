@@ -65,8 +65,9 @@ class PauliString:
     def __add__(self, other):
         if isinstance(other, PauliString):
             return PauliStrings(self, other)
-        elif isinstance(other, PauliStrings):
+        if isinstance(other, PauliStrings):
             return PauliStrings(self, *other)
+        return NotImplemented
 
     def __eq__(self, other):
         if not isinstance(other, PauliString):
