@@ -5,7 +5,9 @@ class Fermion:
     @property
     def type(self):
         'Return the type of fermion.'
-        return 'creation' if '^' in self.fermion else 'annihilation'
+        if '^' in self.fermion:
+            return 'creation'
+        return 'annihilation'
 
     @property
     def num(self):
@@ -23,6 +25,4 @@ class Fermion:
 if __name__ == "__main__":
     fermion_list = ['2', '1^', '3', '2^', '1']
     fermion_objects = [Fermion(fermion) for fermion in fermion_list]
-
-    sorted_fermion = Fermion.sort_fermions(fermion_objects)
-    print(sorted_fermion)
+    print(fermion_objects)

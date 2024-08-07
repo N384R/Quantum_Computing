@@ -1,5 +1,9 @@
+import sys
 from copy import deepcopy
+import time
 from .fermion import Fermion
+
+sys.setrecursionlimit(10**7)
 
 class FermionicSort:
     def __init__(self, operator=None):
@@ -167,4 +171,3 @@ class FermionicSort:
 if __name__ == "__main__":
     fo = FermionicSort('2.54 3^ 0^ 1 2')
     print('Output:', fo.operator)
-    

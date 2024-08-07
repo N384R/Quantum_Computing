@@ -16,6 +16,7 @@ from qiskit import QuantumCircuit
 from jqc.ansatz import Ansatz
 from jqc.ansatz import UCCSD
 from jqc.measure.hamiltonian import hamiltonian
+from jqc.measure.spin import measure_spin
 from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profile
@@ -162,4 +163,5 @@ class VQE:
         self.profile.energy_elec = float(optimized.fun)
         self.profile.coeff = optimized.x
         self.profile.circuit = self.circuit(optimized.x)
+        self.profile.spin = measure_spin(self.profile)
         return self.profile
