@@ -90,7 +90,7 @@ class JordanWigner():
         for fermionstring in fermionstrings:
             if fermionstring in ('-', '+'):
                 continue
-            num = max([Fermion(fermion).num for fermion in fermionstring[1:]])
+            num = max(Fermion(fermion).num for fermion in fermionstring[1:])
             maximum = num if num > maximum else maximum
         return maximum
 
@@ -151,6 +151,12 @@ class JordanWignerMapper():
 
     def values(self):
         return self.pauli_strings.values()
+
+    def __mul__(self, other):
+        return self.pauli_strings * other.pauli_strings
+
+    def __add__(self, other):
+        return self.pauli_strings + other.pauli_strings
 
     def __repr__(self):
         line = ''

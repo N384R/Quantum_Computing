@@ -3,7 +3,9 @@ import time
 import numpy as np
 from qiskit.quantum_info import Statevector, partial_trace
 from qiskit import QuantumCircuit
+from jqc.vqe.profile import Profile
 from jqc.mapper.pauli_string import PauliString
+from jqc.measure.angular_momentum import s_plus, s_minus, s_z
 
 class StateVector:
     'Class for running State Vector simulator.'
@@ -53,3 +55,10 @@ class StateVector:
         reduced_density_matrix = partial_trace(statevector, reduce_idx).data
         reduced_operator = PauliString(left_pauli).matrix
         return np.trace(reduced_density_matrix @ reduced_operator)
+
+    def measure_spin(self, profile: Profile) -> float:
+        'Measure the spin of a quantum circuit.'
+        s_x_and_s_y = s_plus(profile) * s_minus(profile) + s_minus(profile) * s_plus(profile)
+        s_x_and_s_y_val = self.measure(profile.circuit, s_x_and_s_y, parallel=False)
+        s_z_val = self.measure(profile.circuit, s_z(profile) * s_z(profile), parallel=False)
+        return 0.5 * s_x_and_s_y_val + s_z_val

@@ -14,3 +14,6 @@ class Simulator(Protocol):
     def get_overlap(self, state1: Profile, state2: Profile) -> float:
         'Get the square of the overlap between two states.'
         ...
+    def measure_spin(self, profile: Profile) -> float:
+        'Measure the spin of a quantum circuit.'
+        ...
