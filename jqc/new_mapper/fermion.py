@@ -29,9 +29,6 @@ class Fermion:
     def __hash__(self) -> int:
         return hash(self.fermion)
 
-    def __hash__(self):
-        return hash(self.fermion)
-
     def __repr__(self):
         sub = str.maketrans("0123456789^", "₀₁₂₃₄₅₆₇₈₉†")
         notation = self.fermion.translate(sub)
@@ -62,13 +59,6 @@ class FermionicOp:
         for k, v in other.items():
             result[k] = result.get(k, 0) + v
         return FermionicOp(result)
-
-    @staticmethod
-    def split_op(operators):
-        'Split the operators in the string.'
-        operators = operators.split()
-        string = tuple(Fermion(op) for op in operators[1:])
-        return {string: float(operators[0])}
 
     def __repr__(self):
         result = ''
