@@ -3,6 +3,7 @@ This module defines the Fermion class and FermionicOp class.
 '''
 
 from itertools import pairwise
+from .jordan_wigner import jordan_wigner
 
 class Fermion:
     'Class for Fermionic operator.'
@@ -38,10 +39,12 @@ class Fermion:
 class FermionicOp:
     'Class for string of Fermionic operators.'
     def __init__(self, *args):
-        if isinstance(args[0], dict):
+        if not args:
+            self._objects = {}
+        elif isinstance(args[0], dict):
             self._objects = args[0]
         elif isinstance(args[0], float) and isinstance(args[1], str):
-            self._objects = split_op(args[0], args[1])
+            self._objects = get_op(args[0], args[1])
         else:
             raise TypeError('Invalid input.')
 
@@ -51,35 +54,50 @@ class FermionicOp:
         return self._objects
 
     def __add__(self, other):
-        result = self._objects.copy()
-        if isinstance(other, FermionicOp):
-            other = other._objects
-        else:
+        if not isinstance(other, FermionicOp):
             return NotImplemented
-        for k, v in other.items():
+        result = self.objects.copy()
+        for k, v in other.objects.items():
             result[k] = result.get(k, 0) + v
+            if abs(result[k]) < 1e-15:
+                del result[k]
         return FermionicOp(result)
+
+    def __sub__(self, other):
+        if not isinstance(other, FermionicOp):
+            return NotImplemented
+        result = self.objects.copy()
+        for k, v in other.objects.items():
+            result[k] = result.get(k, 0) - v
+            if abs(result[k]) < 1e-15:
+                del result[k]
+        return FermionicOp(result)
+
+    def jordan_wigner(self):
+        'Convert a Fermionic operator to a Pauli operator.'
+        return jordan_wigner(self.objects)
 
     def __repr__(self):
         result = ''
-        for operator, value in self._objects.items():
+        for operator, value in self.objects.items():
             sign = '-' if value < 0 else '+'
             ops = ''.join(str(op) for op in operator)
             result += f'{sign} ({abs(value):.06f}) {ops}\n'
         return result
 
-def split_op(val, obj) -> dict:
-    'Split the operators in a string and return a list of Fermion objects.'
+def get_op(val, obj) -> dict:
+    'Return the operators in a string.'
     obj = tuple(Fermion(v) for v in obj.split())
-    return {op: v for v, op in fermionic_sort(val, obj)}
+    return dict(fermionic_sort(obj, val))
 
-def fermionic_sort(val, obj):
+def fermionic_sort(obj, val):
     'Sort the operators in a string.'
-    val, obj = num_sort(val, obj)
-    for v, op in dirac_sort(val, obj):
-        yield v, op
+    obj, val = num_sort(obj, val)
+    for op, v in dirac_sort(obj, val):
+        if abs(v) > 1e-15:
+            yield op, v
 
-def num_sort(val, obj):
+def num_sort(obj, val):
     'Sort the operators by the number of the fermion.'
     obj_list = list(obj)
     swapped = False
@@ -88,8 +106,8 @@ def num_sort(val, obj):
             val, obj_list[i], obj_list[j] = -val, obj_list[j], obj_list[i]
             swapped = True
     if swapped:
-        return num_sort(val, tuple(obj_list))
-    return val, tuple(obj_list)
+        return num_sort(tuple(obj_list), val)
+    return tuple(obj_list), val
 
 def mode(a, b):
     'Return the mode of sorting.'
@@ -100,21 +118,22 @@ def mode(a, b):
         return 'dirac'
     return 'keep'
 
-def dirac_sort(val, obj):
+def dirac_sort(obj, val):
     'Sort the operators by the commutator relation.'
     obj_list = list(obj)
     for i, j in pairwise(range(len(obj_list))):
         if mode(obj_list[i], obj_list[j]) == 'dirac':
             if obj_list[i].num == -obj_list[j].num:
                 reduced_op = obj_list[:i] + obj_list[j+1:]
-                yield from dirac_sort(val, tuple(reduced_op))
+                yield from dirac_sort(tuple(reduced_op), val)
             obj_list[i], obj_list[j] = obj_list[j], obj_list[i]
-            yield from dirac_sort(-val, tuple(obj_list))
+            yield from dirac_sort(tuple(obj_list), -val)
             return
-    yield num_sort(val, tuple(obj_list))
+    yield num_sort(tuple(obj_list), val)
 
 if __name__ == "__main__":
     fo1 = FermionicOp(1.00, '1 2 2^ 1^')
     fo2 = FermionicOp(2.00, '1^ 2^ 2 1')
     fo3 = fo1 + fo2
-    print(fo3)
+    print(f'Text:\n{fo3}')
+    print(f'Dict:\n{fo3.objects}')
