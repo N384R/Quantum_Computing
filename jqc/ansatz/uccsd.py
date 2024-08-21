@@ -9,27 +9,17 @@ ansatz: Generates UCCSD ansatz circuit.
 from itertools import product, combinations
 import numpy as np
 import scipy.optimize as opt
-from jqc.mapper.jordan_wigner import JordanWignerMapper
-
-def sign_p(val):
-    'Sign function'
-    return '+' if val > 0 else '-'
-
-def sign_m(val):
-    'Sign function'
-    return '-' if val > 0 else '+'
+from jqc.mapper.fermion import FermionicOp
 
 def singles(val, i, j):
     'Singles operator'
-    operator = f'{sign_p(val)} {abs(val):f} {j}^ {i} ' + '\n'
-    operator += f'{sign_m(val)} {abs(val):f} {i}^ {j} ' + '\n'
-    return operator
+    return FermionicOp(val, f'{j}^ {i}') - \
+           FermionicOp(val, f'{i}^ {j}')
 
 def doubles(val, i, j, k, l):
     'Doubles operator'
-    operator = f'{sign_p(val)} {abs(val):f} {k}^ {l}^ {j} {i} ' + '\n'
-    operator += f'{sign_m(val)} {abs(val):f} {i}^ {j}^ {l} {k} ' + '\n'
-    return operator
+    return FermionicOp(val, f'{k}^ {l}^ {j} {i}') - \
+           FermionicOp(val, f'{i}^ {j}^ {l} {k}')
 
 def boundary(coeff):
     'Boundary condition'
@@ -51,55 +41,52 @@ class UCCSD:
         for _ in range(ne):
             for _ in range(ne, no):
                 count += 2
-
         for _ in product(range(ne), repeat = 2):
             for _ in product(range(ne, no), repeat = 2):
                 count += 1
-
         return [coeff] * count
 
     def mapping(self, profile, coeff):
         'Generate UCCSD ansatz Pauli strings'
-        uccsd_fermion = ''
+        fermionic_op = FermionicOp()
         no = profile.num_orb
         ne = profile.num_elec // 2
         value = iter(coeff)
         for i in range(ne):
             for j in range(ne, no):
-                uccsd_fermion += singles(next(value), i, j)
-                uccsd_fermion += singles(next(value), i+no, j+no)
+                fermionic_op += singles(next(value), i, j)
+                fermionic_op += singles(next(value), i+no, j+no)
 
         for i, j in product(range(ne), repeat = 2):
             for k, l in product(range(ne, no), repeat = 2):
-                uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
-
-        return JordanWignerMapper(uccsd_fermion)
+                fermionic_op += doubles(next(value), i, j+no, k, l+no)
+        return fermionic_op.jordan_wigner
 
     def ansatz(self, qc, profile, coeff):
         'Generate UCCSD ansatz circuit'
-        for p_string, values in self.mapping(profile, coeff).items():
+        for obj, val in self.mapping(profile, coeff).items():
             chk = []
-            for idx, p in p_string.items():
-                if p.symbol == 'X':
+            for idx, po in enumerate(obj):
+                if po.symbol == 'X':
                     qc.h(idx)
-                elif p.symbol == 'Y':
+                elif po.symbol == 'Y':
                     qc.sdg(idx)
                     qc.h(idx)
-                if p.symbol != 'I':
+                if po.symbol != 'I':
                     chk.append(idx)
 
             for i, j in zip(chk, chk[1:]):
                 qc.cx(i, j)
 
-            qc.rz(values.imag, max(chk))
+            qc.rz(val.imag, max(chk))
 
             for i, j in zip(chk[:-1][::-1], chk[1:][::-1]):
                 qc.cx(i, j)
 
-            for idx, p in p_string.items():
-                if p.symbol == 'X':
+            for idx, po in enumerate(obj):
+                if po.symbol == 'X':
                     qc.h(idx)
-                elif p.symbol == 'Y':
+                elif po.symbol == 'Y':
                     qc.h(idx)
                     qc.s(idx)
 
@@ -126,23 +113,23 @@ class eUCCSD(UCCSD):
 
     def mapping(self, profile, coeff):
         'Generate Spin Flip UCCSD ansatz Pauli strings'
-        uccsd_fermion = ''
+        fermionic_op = FermionicOp()
         no = profile.num_orb
         ne = profile.num_elec // 2
         value = iter(coeff)
         for i in range(ne):
             for j in range(ne, no):
-                uccsd_fermion += singles(next(value), i, j)
-                uccsd_fermion += singles(next(value), i+no, j+no)
+                fermionic_op += singles(next(value), i, j)
+                fermionic_op += singles(next(value), i+no, j+no)
 
         for i, j in product(range(ne), repeat = 2):
             for k, l in product(range(ne, no), repeat = 2):
-                uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
+                fermionic_op += doubles(next(value), i, j+no, k, l+no)
 
         for i, j in combinations(range(no), 2):
-            uccsd_fermion += doubles(next(value), j, i+no, j+no, i)
+            fermionic_op += doubles(next(value), j, i+no, j+no, i)
 
-        return JordanWignerMapper(uccsd_fermion)
+        return fermionic_op.jordan_wigner
 
 class UCCGSD(UCCSD):
     'Unitary Coupled Cluster Generalized Singles and Doubles (UCCGSD) ansatz'
@@ -165,21 +152,21 @@ class UCCGSD(UCCSD):
 
     def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
-        uccsd_fermion = ''
+        fermionic_op = FermionicOp()
         no = profile.num_orb
         value = iter(coeff)
         for i, j in combinations(range(no), 2):
-            uccsd_fermion += singles(next(value), i, j)
+            fermionic_op += singles(next(value), i, j)
 
         for i, j, k, l in combinations(range(no), 4):
-            uccsd_fermion += doubles(next(value), i, j, k, l)
-            uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+            fermionic_op += doubles(next(value), i, j, k, l)
+            fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
 
         for i, j in product(range(no), repeat = 2):
             for k, l in product(range(i+1, no), range(j+1, no)):
-                uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
+                fermionic_op += doubles(next(value), i, j+no, k, l+no)
 
-        return JordanWignerMapper(uccsd_fermion)
+        return fermionic_op.jordan_wigner
 
 class eUCCGSD(UCCSD):
     'entangled Unitary Coupled Cluster Generalized Singles and Doubles (eUCCGSD) ansatz'
@@ -205,24 +192,24 @@ class eUCCGSD(UCCSD):
 
     def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
-        uccsd_fermion = ''
+        fermionic_op = FermionicOp()
         no = profile.num_orb
         value = iter(coeff)
         for i, j in combinations(range(no), 2):
-            uccsd_fermion += singles(next(value), i, j)
+            fermionic_op += singles(next(value), i, j)
 
         for i, j, k, l in combinations(range(no), 4):
-            uccsd_fermion += doubles(next(value), i, j, k, l)
-            uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+            fermionic_op += doubles(next(value), i, j, k, l)
+            fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
 
         for i, j in product(range(no), repeat = 2):
             for k, l in product(range(i+1, no), range(j+1, no)):
-                uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
+                fermionic_op += doubles(next(value), i, j+no, k, l+no)
 
         for i, j in combinations(range(no), 2):
-            uccsd_fermion += doubles(next(value), i, j+no, i+no, j)
+            fermionic_op += doubles(next(value), i, j+no, i+no, j)
 
-        return JordanWignerMapper(uccsd_fermion)
+        return fermionic_op.jordan_wigner
 
 class kUpCCGSD(UCCSD):
     'k-paired Unitary Coupled Cluster Generalized Singles and Doubles (kUpCCGSD) ansatz'
@@ -249,22 +236,22 @@ class kUpCCGSD(UCCSD):
 
     def mapping(self, profile, coeff):
         'Generate UCCGSD ansatz Pauli strings'
-        uccsd_fermion = ''
+        fermionic_op = FermionicOp()
         no = profile.num_orb
         value = iter(coeff)
         for _ in range(self.k):
             for i, j in combinations(range(no), 2):
-                uccsd_fermion += singles(next(value), i, j)
+                fermionic_op += singles(next(value), i, j)
 
             for i, j, k, l in combinations(range(no), 4):
-                uccsd_fermion += doubles(next(value), i, j, k, l)
-                uccsd_fermion += doubles(next(value), i+no, j+no, k+no, l+no)
+                fermionic_op += doubles(next(value), i, j, k, l)
+                fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
 
             for i, j in product(range(no), repeat = 2):
                 for k, l in product(range(i+1, no), range(j+1, no)):
-                    uccsd_fermion += doubles(next(value), i, j+no, k, l+no)
+                    fermionic_op += doubles(next(value), i, j+no, k, l+no)
 
             for i, j in combinations(range(no), 2):
-                uccsd_fermion += doubles(next(value), i, i+no, j, j+no)
+                fermionic_op += doubles(next(value), i, i+no, j, j+no)
 
-        return JordanWignerMapper(uccsd_fermion)
+        return fermionic_op.jordan_wigner

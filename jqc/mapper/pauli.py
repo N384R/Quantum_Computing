@@ -88,7 +88,7 @@ class PauliOp:
         elif isinstance(args[0], dict):
             self._objects = args[0]
         elif isinstance(args[1], str):
-            self._objects = get_op(args[0], args[1])
+            self._objects = get_op(args[1], args[0])
         else:
             raise TypeError('Invalid input.')
 
@@ -124,22 +124,38 @@ class PauliOp:
         for k, v in distribute_ops(self.objects, other.objects):
             result[k] = result.get(k, 0) + v
             if abs(result[k].real) < 1e-15:
-                result[k] = result[k].imag
+                result[k] = result[k].imag * 1j
             if abs(result[k].imag) < 1e-15:
                 result[k] = result[k].real
         return PauliOp(result)
 
+    def __truediv__(self, other):
+        if not isinstance(other, (int, float)):
+            return NotImplemented
+        result = {}
+        for k, v in self.objects.items():
+            result[k] = v / other
+        return PauliOp(result)
+
+    def items(self):
+        'Return the items in the string.'
+        return self.objects.items()
+
     def __repr__(self):
+        def sgn(v):
+            return '-' if v < 0 else '+'
         result = ''
-        for pauli, value in self.objects.items():
+        for pauli, val in self.objects.items():
             ops  = ''.join(str(op) for op in pauli)
-            result += f'+ ({value: .06f}) {ops}\n'
+            val_str = f'{sgn(val.real)} {abs(val.real):.06f} ' + \
+                      f'{sgn(val.imag)} {abs(val.imag):.06f} i'
+            result += f'+ ({val_str}) {ops}\n'
         return result
 
-def get_op(val, obj) -> dict:
+def get_op(obj, val) -> dict:
     'Return the operators in a string.'
     obj = tuple(Pauli(v) for v in obj.split())
-    return dict(arrange_ops(obj, val))
+    return {obj: val}
 
 def arrange_ops(obj, val):
     'Return the reduced operators in a string.'

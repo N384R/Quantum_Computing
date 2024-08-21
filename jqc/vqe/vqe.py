@@ -163,6 +163,6 @@ class VQE:
         self.profile.energy_elec = float(optimized.fun)
         self.profile.coeff = optimized.x
         self.profile.circuit = self.circuit(optimized.x)
-        self.profile.spin = self.simulator.measure_spin(self.profile)
+        # self.profile.spin = self.simulator.measure_spin(self.profile)
         return self.profile
 

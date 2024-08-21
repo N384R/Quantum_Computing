@@ -135,6 +135,7 @@ class JordanWigner():
 class JordanWignerMapper():
     def __init__(self, operator):
         self.fermi_sort = FermionicSort(operator)
+        print(self.fermi_sort)
         self.pauli_strings = JordanWigner(self.fermi_sort).pauli_strings
 
     def __getitem__(self, key):

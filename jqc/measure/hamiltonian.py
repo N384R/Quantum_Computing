@@ -1,7 +1,7 @@
 from itertools import product
 import numpy as np
 from pyscf import ao2mo, scf
-from jqc.mapper.jordan_wigner import JordanWignerMapper
+from jqc.mapper.fermion import FermionicOp
 
 def pyscf_luncher(mol):
     '''Run PySCF to get the Hamiltonian information.'''
@@ -28,20 +28,18 @@ def pyscf_luncher(mol):
 
 def hamiltonian(profile):
     '''Generate the Hamiltonian in the second quantization form.'''
-    second_q = ''
+    second_q = FermionicOp()
     n = profile.num_orb
     for i, j in product(range(n), repeat=2):
         if abs(coeff := profile.qm['hcore'][i, j]) < 1e-10:
             continue
-        sign = '+' if coeff > 0 else ''
-        second_q += f'{sign} {coeff:.16f} {i}^ {j}' + '\n'
-        second_q += f'{sign} {coeff:.16f} {i+n}^ {j+n}' + '\n'
+        second_q += FermionicOp(coeff, f'{j}^ {i}') + \
+                    FermionicOp(coeff, f'{j+n}^ {i+n}')
     for i, j, k, l in product(range(n), repeat=4):
         if abs(coeff := profile.qm['two_elec'][i, j, k, l]/2) < 1e-10:
             continue
-        sign = '+' if coeff > 0 else ''
-        second_q += f'{sign} {coeff:.16f} {i}^ {k}^ {l} {j}' + '\n'
-        second_q += f'{sign} {coeff:.16f} {i}^ {k+n}^ {l+n} {j}' + '\n'
-        second_q += f'{sign} {coeff:.16f} {i+n}^ {k}^ {l} {j+n}' + '\n'
-        second_q += f'{sign} {coeff:.16f} {i+n}^ {k+n}^ {l+n} {j+n}' + '\n'
-    return JordanWignerMapper(second_q)
+        second_q += FermionicOp(coeff, f'{k}^ {j}^ {i} {l}') + \
+                    FermionicOp(coeff, f'{k}^ {j+n}^ {i+n} {l}') + \
+                    FermionicOp(coeff, f'{k+n}^ {j}^ {i} {l+n}') + \
+                    FermionicOp(coeff, f'{k+n}^ {j+n}^ {i+n} {l+n}')
+    return second_q.jordan_wigner

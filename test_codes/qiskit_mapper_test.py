@@ -1,3 +1,5 @@
+#%%
+
 from qiskit_algorithms import NumPyMinimumEigensolver
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
 from qiskit_nature.second_q.mappers import JordanWignerMapper
