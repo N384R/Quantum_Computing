@@ -5,7 +5,6 @@ This module contains Pauli class and PauliOp class.
 from functools import reduce
 from itertools import chain
 import operator
-import numpy as np
 
 class Pauli:
     'A class to represent a Pauli operator.'
@@ -20,10 +19,10 @@ class Pauli:
              ('X', 'Y'):  'iZ', ('Y', 'Z'):  'iX', ('Z', 'X'):  'iY',
              ('Y', 'X'): '-iZ', ('Z', 'Y'): '-iX', ('X', 'Z'): '-iY'}
 
-    matrices = {'X': np.array([[0,   1], [1,  0]]),
-                'Y': np.array([[0, -1j], [1j, 0]]),
-                'Z': np.array([[1,   0], [0, -1]]),
-                'I': np.array([[1,   0], [0,  1]])}
+    X: 'Pauli'
+    Y: 'Pauli'
+    Z: 'Pauli'
+    I: 'Pauli'
 
     def __init__(self, pauli):
         if pauli not in Pauli.valid_paulis:
@@ -41,13 +40,6 @@ class Pauli:
         sign = -1 if '-' in self.symbol else 1
         comp = 1j if 'i' in self.symbol else 1
         return (sign, comp, self.symbol[-1])
-
-    @property
-    def matrix(self):
-        'Return the matrix representation of the Pauli operator.'
-        sign, comp, op = self.attribute
-        matrix = Pauli.matrices[op]
-        return sign * comp * matrix
 
     def __mul__(self, other):
         if not isinstance(other, Pauli):
@@ -78,6 +70,11 @@ class Pauli:
 
     def __repr__(self):
         return self.symbol
+
+Pauli.X = Pauli('X')
+Pauli.Y = Pauli('Y')
+Pauli.Z = Pauli('Z')
+Pauli.I = Pauli('I')
 
 class PauliOp:
     'A class to represent a string of Pauli operators.'

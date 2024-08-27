@@ -12,15 +12,26 @@ class QASM:
         self.backend = AerProvider().get_backend('qasm_simulator')
 
     def measure(self, qc: QuantumCircuit, operator, parallel: bool) -> float:
-        'Measure the expectation value of an operator'
-        tasks = [(qc, p_string, values)
-                 for p_string, values in operator.items()]
+        'Measure the expectation value of a Hamiltonian'
+        tasks = [(qc, p_string, values) for p_string, values in operator.items()]
+        count = 0
+        energy = 0.
+
+        def process_task(args):
+            nonlocal energy, count, tasks
+            for result in args:
+                energy += result
+                count += 1
+                print(f'({count/len(tasks) * 100: 3.0f}%)', end='\r', flush=True)
+
         if parallel:
-            with Pool(4) as pool:
-                energy = pool.map(self.single_measure, tasks)
+            with Pool(8) as pool:
+                tasks_iter = pool.imap(self.single_measure, tasks)
+                process_task(tasks_iter)
         else:
-            energy = [self.single_measure(task) for task in tasks]
-        return sum(energy)
+            task_iter = (self.single_measure(task) for task in tasks)
+            process_task(task_iter)
+        return energy
 
     def single_measure(self, args: tuple[QuantumCircuit, dict, complex]):
         'Measure the expectation value of a Pauli string'

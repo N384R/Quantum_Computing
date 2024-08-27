@@ -146,7 +146,7 @@ class VQE:
             start = datetime.datetime.now()
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
-            print(f"Iteration: {self.iteration()}, Converged!!         ")
+            print(f'Iteration: {self.iteration()}, Converged!!' + ' '*16)
             print(f'Total Energy: {result.energy_total():12.09f}\n')
             print(f'Elapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             return result
@@ -165,4 +165,3 @@ class VQE:
         self.profile.circuit = self.circuit(optimized.x)
         # self.profile.spin = self.simulator.measure_spin(self.profile)
         return self.profile
-
