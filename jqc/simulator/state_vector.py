@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+import time
 import numpy as np
 from qiskit.quantum_info import Statevector
 from qiskit import QuantumCircuit
@@ -17,7 +18,8 @@ class StateVector:
 
         if parallel:
             with Pool(8) as pool:
-                energies = pool.map(self.single_measure, tasks)
+                chunk_size = len(tasks) // pool._processes # type: ignore # pylint: disable=protected-access
+                energies = pool.map(self.single_measure, tasks, chunksize=chunk_size)
             energy = sum(energies)
         else:
             energy = sum(self.single_measure(task) for task in tasks)
@@ -53,50 +55,27 @@ def get_statevector(qc) -> np.ndarray:
     statevector = Statevector(qc).data
     real_part = np.where(abs(statevector.real) < 1e-15, 0, statevector.real)
     imag_part = np.where(abs(statevector.imag) < 1e-15, 0, statevector.imag)
-    if np.all(imag_part == 0):
-        return real_part
+    # if np.all(imag_part == 0):
+    #     return real_part
     return real_part + 1j * imag_part
-
 
 def mult_operator(statevector, operator):
     'Multiply an operator to a statevector.'
+    indices = np.arange(len(statevector))
+    result = np.copy(statevector)
     for i, op in enumerate(operator):
         if op == Pauli.I:
             continue
         if op == Pauli.X:
-            statevector = operation_x(statevector, i)
+            new_indices = indices ^ (1 << i)
+            result[new_indices] = result[indices]
         elif op == Pauli.Y:
-            statevector = operation_y(statevector, i)
+            new_indices = indices ^ (1 << i)
+            result = result.astype(complex)
+            phase_factors = np.where((indices >> i) & 1, 1j, -1j)
+            result[new_indices] = phase_factors * result[indices]
         elif op == Pauli.Z:
-            statevector = operation_z(statevector, i)
-    return statevector
-
-def operation_x(statevector, idx):
-    'Apply the X operator to a statevector.'
-    result = np.zeros_like(statevector)
-    non_zero_idx = np.where((statevector != 0).real)[0]
-    for i in non_zero_idx:
-        new_i = i ^ (1 << idx)
-        result[new_i] = statevector[i]
-    return result
-
-def operation_y(statevector, idx):
-    'Apply the Y operator to a statevector.'
-    result = np.zeros_like(statevector).astype(complex)
-    non_zero_idx = np.where((statevector != 0).real)[0]
-    for i in non_zero_idx:
-        new_i = i ^ (1 << idx)
-        if (i >> idx) & 1 == 0:
-            result[new_i] = -1j * statevector[i]
-        else:
-            result[new_i] = 1j * statevector[i]
-    return result
-
-def operation_z(statevector, idx):
-    'Apply the Z operator to a statevector.'
-    result = np.copy(statevector)
-    non_zero_idx = np.where((statevector != 0).real)[0]
-    for i in non_zero_idx:
-        if (i >> idx) & 1:
-            result[i] *= -1
+            result = result.copy()
+            phase_factors = np.where((indices >> i) & 1, -1, 1)
+            result *= phase_factors
     return result

@@ -1,6 +1,7 @@
 from multiprocessing import Pool
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
+from jqc.mapper.pauli import Pauli
 from jqc.vqe.profile import Profile
 from jqc.measure.angular_momentum import s_plus, s_minus, s_z
 
@@ -36,7 +37,7 @@ class QASM:
     def single_measure(self, args: tuple[QuantumCircuit, dict, complex]):
         'Measure the expectation value of a Pauli string'
         qc, p_string, values = args
-        if all(p.symbol == 'I' for p in p_string.values()):
+        if all(p == Pauli.I for p in p_string.values()):
             return values.real
         probability = self.run_simulator(qc, p_string)
         expectation = float(probability.real) * values.real
@@ -45,13 +46,13 @@ class QASM:
     def run_simulator(self, qc, p_string) -> float:
         'Run the QASM simulator.'
         for idx, p in p_string.items():
-            if p.symbol == 'X':
+            if p == Pauli.X:
                 qc.h(idx)
-            elif p.symbol == 'Y':
+            elif p == Pauli.Y:
                 qc.sdg(idx)
                 qc.h(idx)
         for idx, p in p_string.items():
-            if p.symbol == 'I':
+            if p == Pauli.I:
                 continue
             qc.measure(idx, idx)
         result = self.backend.run(qc, shots=self.shots).result().get_counts()
