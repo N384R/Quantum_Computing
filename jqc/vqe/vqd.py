@@ -62,7 +62,7 @@ class VQD(VQE):
             print(f'State {self.profile.state}:')
             result = func(self, *args, **kwargs)
             print(f"Iteration: {self.iteration()}, Converged!!         ")
-            print(f'Total Energy: {result.energy_total():12.09f}\n')
+            print(f'Total Energy: {result.profile.energy_total:12.09f}\n')
             return result
         return wrapper
 
@@ -84,7 +84,7 @@ class VQD(VQE):
             elapsed = str(datetime.datetime.now() - start)
             print('Final State Energies:')
             for i, state in enumerate(self.profiles):
-                print(f'State {i}: {state.energy_total():12.09f}')
+                print(f'State {i}: {state.energy_total:12.09f}')
             print(f'\nElapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             del self.profile
             return result
@@ -99,4 +99,4 @@ class VQD(VQE):
             self._config['iteration'] = 0
             self._run()
             self.profiles.update(self.profile)
-        return self.profiles
+        return self

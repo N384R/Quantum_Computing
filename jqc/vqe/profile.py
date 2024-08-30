@@ -9,23 +9,86 @@ class Profile:
     Class for storing the profile information of a molecule.
     '''
     def __init__(self, mol):
-        info = pyscf_luncher(mol)
+        self.info = pyscf_luncher(mol)
 
-        self.num_orb = info['num_orb']
-        self.num_elec = info['num_elec']
-        self.energy_nucl = info['energy_nuc']
-        self.energy_elec = info['energy_elec']
-        self.qm = {'hcore': info['hcore_mo'], 'two_elec': info['two_elec_mo'],
-                   'coords': mol.atom_coords('Bohr')}
+        self._state: int = 0
+        self._spin: float = 0.00
+        self._coeff: float = 0.00
+        self._circuit: QuantumCircuit = QuantumCircuit()
 
-        self.state: int = 0
-        self.spin: float = 0.00
-        self.coeff: np.ndarray = np.array([])
-        self.circuit: QuantumCircuit = QuantumCircuit()
+    @property
+    def num_orb(self) -> int:
+        'Returns the number of orbitals.'
+        return self.info['num_orb']
 
-    def energy_total(self):
+    @property
+    def num_elec(self) -> int:
+        'Returns the number of electrons.'
+        return self.info['num_elec']
+
+    @property
+    def energy_nucl(self) -> float:
+        'Returns the nuclear energy.'
+        return self.info['energy_nuc']
+
+    @property
+    def energy_elec(self) -> float:
+        'Returns the electronic energy.'
+        return self.info['energy_elec']
+
+    @energy_elec.setter
+    def energy_elec(self, energy: float):
+        self.info['energy_elec'] = energy
+
+    @property
+    def energy_total(self) -> float:
         'Returns the total energy of the system.'
         return self.energy_elec + self.energy_nucl
+
+    @property
+    def coeff(self) -> float:
+        'Returns the coefficient of the state.'
+        return self._coeff
+
+    @coeff.setter
+    def coeff(self, coeff: float):
+        self._coeff = coeff
+
+    @property
+    def state(self) -> int:
+        'Returns the state number.'
+        return self._state
+
+    @state.setter
+    def state(self, state: int):
+        self._state = state
+
+    @property
+    def spin(self) -> float:
+        'Returns the spin of the state.'
+        return self._spin
+
+    @spin.setter
+    def spin(self, spin: float):
+        self._spin = spin
+
+    @property
+    def circuit(self) -> QuantumCircuit:
+        'Returns the quantum circuit'
+        return self._circuit
+
+    @circuit.setter
+    def circuit(self, circuit: QuantumCircuit):
+        self._circuit = circuit
+
+    @property
+    def qm(self) -> dict:
+        'Returns the quantum mechanical information.'
+        return {
+            'hcore': self.info['hcore_mo'],
+            'two_elec': self.info['two_elec_mo'],
+            'dipole': self.info['dipole_mo']
+        }
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -38,8 +101,7 @@ class Profile:
             'num_orb': self.num_orb,
             'num_elec': self.num_elec,
             'coeff': self.coeff,
-            'energy_elec': self.energy_elec,
-            'energy_nucl': self.energy_nucl,
+            'energy_total': self.energy_total,
             'circuit': self.circuit,
         }
 
@@ -54,13 +116,10 @@ class Profile:
         with open(filename + '.json', 'w', encoding='utf-8') as f:
             json.dump(self.show(), f, indent=4, default=convert)
 
-    #Need to me modified to print currect state
-    #Need to me modified to print currect state
-    #Need to me modified to print currect state
     def __repr__(self):
         if round(self.spin) == 0:
             mult = 'Singlet'
-        elif round(self.spin) == 1:
+        elif round(self.spin) == 2:
             mult = 'Triplet'
         else:
             mult = 'Unknown'
@@ -68,6 +127,9 @@ class Profile:
         return f'{mult}_{state_number}'
 
 class Profiles:
+    '''
+    Class for storing the profile information of a molecule.
+    '''
     def __init__(self, p, nstates=1):
         self.profiles = self._generate_profiles(p, nstates)
 

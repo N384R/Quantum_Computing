@@ -11,7 +11,7 @@ def s_z(profile):
     for i in range(no):
         operator += FermionicOp(0.5, f'{i}^ {i}') - \
                     FermionicOp(0.5, f'{i+no}^ {i+no}')
-    return operator.jordan_wigner
+    return operator
 
 def s_minus(profile):
     'Calculates the S- operator.'
@@ -19,7 +19,7 @@ def s_minus(profile):
     operator = FermionicOp()
     for i in range(no):
         operator += FermionicOp(1.0, f'{i+no}^ {i}')
-    return operator.jordan_wigner
+    return operator
 
 def s_plus(profile):
     'Calculates the S+ operator.'
@@ -27,4 +27,13 @@ def s_plus(profile):
     operator = FermionicOp()
     for i in range(no):
         operator += FermionicOp(1.0, f'{i}^ {i+no}')
-    return operator.jordan_wigner
+    return operator
+
+def total_spin(profile):
+    'Calculates the total spin operator.'
+    sz_op = s_z(profile)
+    sp_op = s_plus(profile)
+    sm_op = s_minus(profile)
+
+    s2_op = sz_op * sz_op + (sp_op * sm_op + sm_op * sp_op) / 2
+    return s2_op.jordan_wigner

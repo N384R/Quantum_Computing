@@ -2,7 +2,7 @@
 from pyscf import gto, scf
 from pyscf import cc
 
-mol = gto.M(atom = 'Li 0 0 0; H 0 0 1.6', basis = 'sto-3g')
+mol = gto.M(atom = 'Be 0 0 0; H 0 0 1.6; H 0 0 -1.6', basis = 'sto-3g')
 rhf = scf.RHF(mol)
 rhf.kernel()
 cc = cc.CCSD(rhf)
@@ -200,7 +200,7 @@ e = ccsd.kernel()
 import numpy as np
 from pyscf import gto, scf, ao2mo
 
-mol = gto.M(atom = 'H 0 0 0; H 0 0 0.75', basis = 'sto-3g')
+mol = gto.M(atom = 'O; H 1 0.957; H 1 0.957 2 104.5', basis = 'sto-3g')
 mf = scf.RHF(mol)
 mf.kernel()
 

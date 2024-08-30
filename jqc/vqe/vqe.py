@@ -10,13 +10,14 @@ batch : Performs the VQE calculation for a given set of coefficients.
 run : Runs the VQE optimization.
 '''
 
+import json
 import datetime
 from pyscf.gto import Mole
 from qiskit import QuantumCircuit
 from jqc.ansatz import Ansatz
 from jqc.ansatz import UCCSD
 from jqc.measure.hamiltonian import hamiltonian
-from jqc.measure.angular_momentum import s_z
+from jqc.measure.angular_momentum import total_spin
 from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profile
@@ -118,7 +119,7 @@ class VQE:
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
             print(f"Iteration: {self.iteration()}, " +
-                  f"Energy: {self.profile.energy_total():12.09f}", end='\r', flush=True)
+                  f"Energy: {self.profile.energy_total:12.09f}", end='\r', flush=True)
             return energy
         return wrapper
 
@@ -135,6 +136,22 @@ class VQE:
         self.profile.circuit = qc
         return energy
 
+    def solve(self, *operator_funcs):
+        'Solves the given operator.'
+        results = {}
+        for operator_func in operator_funcs:
+            if callable(operator_func):
+                operator = operator_func(self.profile)
+            else:
+                raise ValueError('Operator must be a callable function.')
+            results[operator_func.__name__] = self._solve(operator)
+        return results
+
+    def _solve(self, operator) -> float | list:
+        if isinstance(operator, list):
+            return [self._solve(op) for op in operator]
+        return self.simulator.measure(self.profile.circuit, operator, self.parallel)
+
     @staticmethod
     def general_output(func):
         'Decorator for the normal output.'
@@ -147,7 +164,7 @@ class VQE:
             result = func(self, *args, **kwargs)
             elapsed = str(datetime.datetime.now() - start)
             print(f'Iteration: {self.iteration()}, Converged!!' + ' '*16)
-            print(f'Total Energy: {result.energy_total():12.09f}\n')
+            print(f'Total Energy: {result.profile.energy_total:12.09f}\n')
             print(f'Elapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             return result
         return wrapper
@@ -163,5 +180,5 @@ class VQE:
         self.profile.energy_elec = float(optimized.fun)
         self.profile.coeff = optimized.x
         self.profile.circuit = self.circuit(optimized.x)
-        # self.profile.spin = self.simulator.measure_spin(self.profile)
-        return self.profile
+        self.profile.spin = self.solve(total_spin)['total_spin']
+        return self

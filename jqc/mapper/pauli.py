@@ -100,7 +100,7 @@ class PauliOp:
             return NotImplemented
         for k, v in other.objects.items():
             result[k] = result.get(k, 0) + v
-            if abs(result[k]) < 1e-15:
+            if abs(result[k]) < 1e-12:
                 del result[k]
         return PauliOp(result)
 
@@ -110,21 +110,26 @@ class PauliOp:
             return NotImplemented
         for k, v in other.objects.items():
             result[k] = result.get(k, 0) - v
-            if abs(result[k]) < 1e-15:
+            if abs(result[k]) < 1e-12:
                 del result[k]
         return PauliOp(result)
 
     def __mul__(self, other):
-        if not isinstance(other, PauliOp):
-            return NotImplemented
-        result = {}
-        for k, v in distribute_ops(self.objects, other.objects):
-            result[k] = result.get(k, 0) + v
-            if abs(result[k].real) < 1e-15:
-                result[k] = result[k].imag * 1j
-            if abs(result[k].imag) < 1e-15:
-                result[k] = result[k].real
-        return PauliOp(result)
+        if isinstance(other, (int, float)):
+            result = {}
+            for k, v in self.objects.items():
+                result[k] = v * other
+            return PauliOp(result)
+        if isinstance(other, PauliOp):
+            result = {}
+            for k, v in distribute_ops(self.objects, other.objects):
+                result[k] = result.get(k, 0) + v
+                if abs(result[k].real) < 1e-12:
+                    result[k] = result[k].imag * 1j
+                if abs(result[k].imag) < 1e-12:
+                    result[k] = result[k].real
+            return PauliOp(result)
+        return NotImplemented
 
     def __truediv__(self, other):
         if not isinstance(other, (int, float)):

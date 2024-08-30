@@ -9,6 +9,7 @@ ansatz: Generates UCCSD ansatz circuit.
 from itertools import product, combinations
 import numpy as np
 import scipy.optimize as opt
+from optimparallel import minimize_parallel
 from jqc.mapper.fermion import FermionicOp
 
 def singles(val, i, j):
@@ -31,6 +32,8 @@ class UCCSD:
     @staticmethod
     def call_optimizer(func, coeff, method) -> opt.OptimizeResult:
         'Optimize the coefficients'
+        if method in ('BFGS', 'CG'):
+            return opt.minimize(func, coeff, method=method)
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
     def generate_coeff(self, profile, coeff=0.0):

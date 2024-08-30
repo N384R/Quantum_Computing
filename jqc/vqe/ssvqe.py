@@ -86,7 +86,7 @@ class SSVQE(VQE):
         'Decorator for the batch output.'
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
-            print(f"State {self.profile.state}: {self.profile.energy_total():12.09f}")
+            print(f"State {self.profile.state}: {self.profile.energy_total:12.09f}")
             return energy
         return wrapper
 
@@ -134,7 +134,7 @@ class SSVQE(VQE):
             print('!!Successfully Converged!!\n')
             print('Final State Energies:')
             for i, state in enumerate(self.profiles):
-                print(f'State {i}: {state.energy_total():12.09f}')
+                print(f'State {i}: {state.energy_total:12.09f}')
             print(f'\nElapsed time: {elapsed.split(".", maxsplit=1)[0]}')
             del self.profile
             return result
@@ -145,7 +145,7 @@ class SSVQE(VQE):
         'Performs the SSVQE calculation.'
         self.profiles: Profiles = Profiles(self.profile, self.nstates)
         super()._run()
-        return self.profiles
+        return self
 
     def transition_matrix(self, operator):
         'Calculates the transition matrix.'
@@ -162,8 +162,8 @@ class SSVQE(VQE):
             return real + 1j * imag
 
         matrix = [[transition_matrix_element(state1, state2)
-                   for state1 in self.profile]
-                  for state2 in self.profile]
+                   for state1 in self.profiles]
+                  for state2 in self.profiles]
         return matrix
 
 def superposition(state1, state2, mode):

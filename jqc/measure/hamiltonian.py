@@ -11,20 +11,20 @@ def pyscf_luncher(mol):
     mf.kernel()
 
     c = np.asarray(mf.mo_coeff)
-    hcore = mf.get_hcore()
-    two_elec = mol.intor('int2e')
-    result = {
-        'hcore_mo': c.T @ hcore @ c,
+    hcore_ao = mf.get_hcore()
+    two_elec_ao = mol.intor('int2e')
+    two_elec_mo = np.asarray(ao2mo.kernel(mol, c, two_elec_ao, compact=False)
+                             ).reshape((mol.nao, mol.nao, mol.nao, mol.nao))
+    dip_ao = mol.intor('int1e_r', comp=3)
+    return {
+        'num_orb' : mol.nao,
         'num_elec': mol.nelectron,
-        'num_orb' : hcore.shape[0],
-        'two_elec_mo': np.asarray(ao2mo.kernel(mol, c, two_elec, compact=False)).reshape(
-            (hcore.shape[0], hcore.shape[0], hcore.shape[0], hcore.shape[0]))
+        'hcore_mo': c.T @ hcore_ao @ c,
+        'two_elec_mo': two_elec_mo,
+        'dipole_mo'  : np.einsum('xuv,up,vq->xpq', dip_ao, c, c),
+        'energy_nuc' : mol.energy_nuc(),
+        'energy_elec': mf.energy_elec()[0]
     }
-
-    result['energy_nuc'] = mol.energy_nuc()
-    result['energy_elec'] = mf.energy_elec()[0]
-
-    return result
 
 def hamiltonian(profile):
     '''Generate the Hamiltonian in the second quantization form.'''

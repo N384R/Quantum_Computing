@@ -45,7 +45,7 @@ class FermionicOp:
             self._objects = {}
         elif isinstance(args[0], dict):
             self._objects = args[0]
-        elif isinstance(args[0], float) and isinstance(args[1], str):
+        elif isinstance(args[0], (int, float)) and isinstance(args[1], str):
             self._objects = get_op(args[1], args[0])
         else:
             raise TypeError('Invalid input.')
@@ -66,7 +66,7 @@ class FermionicOp:
         result = self.objects.copy()
         for k, v in other.objects.items():
             result[k] = result.get(k, 0) + v
-            if abs(result[k]) < 1e-15:
+            if abs(result[k]) < 1e-12:
                 del result[k]
         return FermionicOp(result)
 
@@ -76,8 +76,31 @@ class FermionicOp:
         result = self.objects.copy()
         for k, v in other.objects.items():
             result[k] = result.get(k, 0) - v
-            if abs(result[k]) < 1e-15:
+            if abs(result[k]) < 1e-12:
                 del result[k]
+        return FermionicOp(result)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            result = {}
+            for k, v in self.objects.items():
+                result[k] = v * other
+            return FermionicOp(result)
+        if isinstance(other, FermionicOp):
+            result = {}
+            for k, v in distribute_ops(self.objects, other.objects):
+                result[k] = result.get(k, 0) + v
+                if abs(result[k]) < 1e-12:
+                    result[k] = 0
+            return FermionicOp(result)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        if not isinstance(other, (int, float)):
+            return NotImplemented
+        result = {}
+        for k, v in self.objects.items():
+            result[k] = v / other
         return FermionicOp(result)
 
     def __repr__(self):
@@ -88,6 +111,12 @@ class FermionicOp:
             result += f'{sign} ({abs(value):.06f}) {ops}\n'
         return result
 
+def distribute_ops(obj1, obj2):
+    'Distribute the operators in a string.'
+    for op1, val in obj1.items():
+        for op2 in obj2:
+            yield from fermionic_sort(tuple([*op1, *op2]), val)
+
 def get_op(obj, val) -> dict:
     'Return the operators in a string.'
     obj = tuple(Fermion(v) for v in obj.split())
@@ -97,7 +126,7 @@ def fermionic_sort(obj, val):
     'Sort the operators in a string.'
     obj, val = num_sort(obj, val)
     for op, v in dirac_sort(obj, val):
-        if abs(v) > 1e-15:
+        if abs(v) > 1e-12:
             yield op, v
 
 def num_sort(obj, val):

@@ -2,8 +2,6 @@ from multiprocessing import Pool
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
 from jqc.mapper.pauli import Pauli
-from jqc.vqe.profile import Profile
-from jqc.measure.angular_momentum import s_plus, s_minus, s_z
 
 class QASM:
     'Class for running Quantum Assembly (QASM) simulator.'
@@ -74,13 +72,6 @@ class QASM:
         result = self.backend.run(qc, shots=self.shots).result().get_counts()
         overlap_sq = abs(result.get('0'*(4*no + 1)) / self.shots * 2 - 1)
         return overlap_sq
-
-    def measure_spin(self, profile: Profile) -> float:
-        'Measure the spin of a quantum circuit.'
-        s_plus_val = self.measure(profile.circuit, s_plus(profile), parallel=False)
-        s_minus_val = self.measure(profile.circuit, s_minus(profile), parallel=False)
-        s_z_val = self.measure(profile.circuit, s_z(profile), parallel=False)
-        return 0.5 * (s_plus_val * s_minus_val + s_minus_val * s_plus_val) + s_z_val * s_z_val
 
 def circuit_swap_test(state1, state2):
     'Swap test circuit for measuring the overlap between two states.'
