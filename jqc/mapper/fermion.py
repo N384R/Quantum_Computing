@@ -113,9 +113,9 @@ class FermionicOp:
 
 def distribute_ops(obj1, obj2):
     'Distribute the operators in a string.'
-    for op1, val in obj1.items():
-        for op2 in obj2:
-            yield from fermionic_sort(tuple([*op1, *op2]), val)
+    for op1, val1 in obj1.items():
+        for op2, val2 in obj2.items():
+            yield from fermionic_sort(tuple([*op1, *op2]), val1 * val2)
 
 def get_op(obj, val) -> dict:
     'Return the operators in a string.'

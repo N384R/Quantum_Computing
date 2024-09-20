@@ -1,7 +1,7 @@
 import datetime
 from jqc.vqe.vqe import VQE
 from jqc.ansatz import Ansatz
-from jqc.ansatz import eUCCSD
+from jqc.ansatz import fUCCSD
 from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profiles
@@ -21,7 +21,7 @@ class VQD(VQE):
     '''
     verbose_print = VQE.verbose_print
 
-    def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator = StateVector()):
+    def __init__(self, mol, ansatz: Ansatz = fUCCSD(), simulator: Simulator = StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self.profiles = None  #type: ignore
         self.nstates = 2

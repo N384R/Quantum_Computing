@@ -2,7 +2,7 @@
 
 from typing import Protocol
 from scipy.optimize import OptimizeResult
-from .uccsd import UCCSD, eUCCSD, UCCGSD, eUCCGSD, kUpCCGSD
+from .uccsd import UCCSD, fUCCSD, UCCGSD, eUCCGSD, kUpCCGSD
 from .hea import HEA
 from .sp import SP, RSP, OSP
 

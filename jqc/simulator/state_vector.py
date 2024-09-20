@@ -2,17 +2,20 @@ from joblib import Parallel, delayed
 import numpy as np
 from numba import jit
 from qiskit.quantum_info import Statevector
-from qiskit import QuantumCircuit
 from jqc.mapper.pauli import Pauli
 
 class StateVector:
     'Class for running State Vector simulator.'
 
-    def measure(self, qc: QuantumCircuit, operator, parallel = False) -> float:
+    def __init__(self):
+        self.parallel = False
+
+    def measure(self, qc1, operator, qc2=None) -> float:
         'Measure the expectation value of an Operator'
-        sv = get_statevector(qc)
-        tasks = ((sv, p_string, values) for p_string, values in operator.items())
-        if parallel:
+        sv1 = get_statevector(qc1)
+        sv2 = get_statevector(qc2) if qc2 else sv1
+        tasks = ((sv1, sv2, p_string, values) for p_string, values in operator.items())
+        if self.parallel:
             quantities = Parallel(n_jobs=-1)(delayed(self.single_measure)(task) for task in tasks)
             quantity = sum(quantities) # type: ignore
         else:
@@ -22,11 +25,11 @@ class StateVector:
     @staticmethod
     def single_measure(args: tuple) -> float:
         'Measure the expectation value of a Pauli string'
-        statevector, p_string, values = args
+        sv1, sv2, p_string, values = args
         if np.all(p_string == Pauli.I):
             return values.real
-        statevector2 = mult_operator(statevector, pauli_to_int(p_string))
-        probability = np.dot(statevector.conj().T, statevector2)
+        statevector2 = mult_operator(sv2, pauli_to_int(p_string))
+        probability = np.dot(sv1.conj().T, statevector2)
         expectation = float(probability.real) * values.real
         return expectation
 

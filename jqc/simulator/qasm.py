@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from joblib import Parallel, delayed
 from qiskit_aer import AerProvider
 from qiskit import QuantumCircuit
 from jqc.mapper.pauli import Pauli
@@ -8,36 +8,25 @@ class QASM:
 
     def __init__(self, shots = 10000):
         self.shots = shots
+        self.parallel = False
         self.backend = AerProvider().get_backend('qasm_simulator')
 
-    def measure(self, qc: QuantumCircuit, operator, parallel: bool) -> float:
+    def measure(self, qc1, operator, qc2 = None) -> float:
         'Measure the expectation value of a Hamiltonian'
-        tasks = [(qc, p_string, values) for p_string, values in operator.items()]
-        count = 0
-        energy = 0.
-
-        def process_task(args):
-            nonlocal energy, count, tasks
-            for result in args:
-                energy += result
-                count += 1
-                print(f'({count/len(tasks) * 100: 3.0f}%)', end='\r', flush=True)
-
-        if parallel:
-            with Pool(8) as pool:
-                tasks_iter = pool.imap(self.single_measure, tasks)
-                process_task(tasks_iter)
+        tasks = [(qc1, qc2, p_string, values) for p_string, values in operator.items()]
+        if self.parallel:
+            quantities = Parallel(n_jobs=-1)(delayed(self.single_measure)(task) for task in tasks)
+            quantity = sum(quantities) # type: ignore
         else:
-            task_iter = (self.single_measure(task) for task in tasks)
-            process_task(task_iter)
-        return energy
+            quantity = sum(self.single_measure(task) for task in tasks)
+        return quantity
 
-    def single_measure(self, args: tuple[QuantumCircuit, dict, complex]):
+    def single_measure(self, args: tuple) -> float:
         'Measure the expectation value of a Pauli string'
-        qc, p_string, values = args
+        qc1, qc2, p_string, values = args
         if all(p == Pauli.I for p in p_string.values()):
             return values.real
-        probability = self.run_simulator(qc, p_string)
+        probability = self.run_simulator(qc1, p_string)
         expectation = float(probability.real) * values.real
         return expectation
 

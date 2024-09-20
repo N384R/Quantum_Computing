@@ -52,4 +52,3 @@ class HEA:
         for i in range(no*2):
             qc.ry(next(value), i)
             qc.rz(next(value), i)
-

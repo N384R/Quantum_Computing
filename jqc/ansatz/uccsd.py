@@ -9,7 +9,6 @@ ansatz: Generates UCCSD ansatz circuit.
 from itertools import product, combinations
 import numpy as np
 import scipy.optimize as opt
-from optimparallel import minimize_parallel
 from jqc.mapper.fermion import FermionicOp
 
 def singles(val, i, j):
@@ -37,32 +36,42 @@ class UCCSD:
         return opt.minimize(func, coeff, method=method, bounds=boundary(coeff))
 
     def generate_coeff(self, profile, coeff=0.0):
-        'Generate UCCSD coefficients'
-        no = profile.num_orb
-        ne = profile.num_elec // 2
-        count = 0
-        for _ in range(ne):
-            for _ in range(ne, no):
-                count += 2
-        for _ in product(range(ne), repeat = 2):
-            for _ in product(range(ne, no), repeat = 2):
-                count += 1
+        'Generate coefficients'
+        count = self._term_count(profile)
         return [coeff] * count
 
+    def _term_count(self, profile):
+        'Count the number of terms in the UCCSD ansatz'
+        no = profile.num_orb
+        ne = profile.num_elec // 2
+        nsingles = len(list(self._singles_idx(ne, no)))
+        ndoubles = len(list(self._doubles_idx(ne, no)))
+        return nsingles + ndoubles
+
+    def _singles_idx(self, ne, no):
+        'Generate singles indices'
+        for i in range(ne):
+            for j in range(ne, no):
+                yield i, j
+                yield i+no, j+no
+
+    def _doubles_idx(self, ne, no):
+        'Generate doubles indices'
+        for i, j in product(range(ne), repeat = 2):
+            for k, l in product(range(ne, no), repeat = 2):
+                yield i, j+no, k, l+no
+
     def mapping(self, profile, coeff):
-        'Generate UCCSD ansatz Pauli strings'
+        'Generate ansatz Pauli strings'
         fermionic_op = FermionicOp()
         no = profile.num_orb
         ne = profile.num_elec // 2
         value = iter(coeff)
-        for i in range(ne):
-            for j in range(ne, no):
-                fermionic_op += singles(next(value), i, j)
-                fermionic_op += singles(next(value), i+no, j+no)
+        for p, q in self._singles_idx(ne, no):
+            fermionic_op += singles(next(value), p, q)
 
-        for i, j in product(range(ne), repeat = 2):
-            for k, l in product(range(ne, no), repeat = 2):
-                fermionic_op += doubles(next(value), i, j+no, k, l+no)
+        for p, q, r, s, in self._doubles_idx(ne, no):
+            fermionic_op += doubles(next(value), p, q, r, s)
         return fermionic_op.jordan_wigner
 
     def ansatz(self, qc, profile, coeff):
@@ -93,168 +102,61 @@ class UCCSD:
                     qc.h(idx)
                     qc.s(idx)
 
-class eUCCSD(UCCSD):
-    ' entangled Unitary Coupled Cluster Singles and Doubles (cUCCSD) ansatz'
+class fUCCSD(UCCSD):
+    ' spin-flip Unitary Coupled Cluster Singles and Doubles (fUCCSD) ansatz'
 
-    def generate_coeff(self, profile, coeff=0.0):
-        'Generate Spin Flip UCCSD coefficients'
-        no = profile.num_orb
-        ne = profile.num_elec // 2
-        count = 0
-        for _ in range(ne):
-            for _ in range(ne, no):
-                count += 2
-
-        for _ in product(range(ne), repeat = 2):
-            for _ in product(range(ne, no), repeat = 2):
-                count += 1
-
-        for _ in combinations(range(no), 2):
-            count += 1
-
-        return [coeff] * count
-
-    def mapping(self, profile, coeff):
-        'Generate Spin Flip UCCSD ansatz Pauli strings'
-        fermionic_op = FermionicOp()
-        no = profile.num_orb
-        ne = profile.num_elec // 2
-        value = iter(coeff)
+    def _singles_idx(self, ne, no):
         for i in range(ne):
             for j in range(ne, no):
-                fermionic_op += singles(next(value), i, j)
-                fermionic_op += singles(next(value), i+no, j+no)
+                yield i, j
+                yield i+no, j+no
+                yield i, j+no
+                yield i+no, j
 
-        for i, j in product(range(ne), repeat = 2):
-            for k, l in product(range(ne, no), repeat = 2):
-                fermionic_op += doubles(next(value), i, j+no, k, l+no)
-
+    def _doubles_idx(self, ne, no):
+        yield from super()._doubles_idx(ne, no)
         for i, j in combinations(range(no), 2):
-            fermionic_op += doubles(next(value), j, i+no, j+no, i)
-
-        return fermionic_op.jordan_wigner
+            yield i, j+no, i+no, j
 
 class UCCGSD(UCCSD):
     'Unitary Coupled Cluster Generalized Singles and Doubles (UCCGSD) ansatz'
 
-    def generate_coeff(self, profile, coeff=0.0):
-        'Generate UCCGSD coefficients'
-        no = profile.num_orb
-        count = 0
-        for _ in combinations(range(no), 2):
-            count += 2
-
-        for _ in combinations(range(no), 4):
-            count += 2
-
-        for i, j in product(range(no), repeat = 2):
-            for _ in product(range(i+1, no), range(j+1, no)):
-                count += 1
-
-        return [coeff] * count
-
-    def mapping(self, profile, coeff):
-        'Generate UCCGSD ansatz Pauli strings'
-        fermionic_op = FermionicOp()
-        no = profile.num_orb
-        value = iter(coeff)
+    def _singles_idx(self, ne, no):
+        'Generate singles indices'
         for i, j in combinations(range(no), 2):
-            fermionic_op += singles(next(value), i, j)
+            yield i, j
+            yield i+no, j+no
 
+    def _doubles_idx(self, ne, no):
+        'Generate doubles indices'
         for i, j, k, l in combinations(range(no), 4):
-            fermionic_op += doubles(next(value), i, j, k, l)
-            fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
+            yield i, j, k, l
+            yield i+no, j+no, k+no, l+no
 
         for i, j in product(range(no), repeat = 2):
             for k, l in product(range(i+1, no), range(j+1, no)):
-                fermionic_op += doubles(next(value), i, j+no, k, l+no)
+                yield i, j+no, k, l+no
 
-        return fermionic_op.jordan_wigner
-
-class eUCCGSD(UCCSD):
+class eUCCGSD(UCCGSD):
     'entangled Unitary Coupled Cluster Generalized Singles and Doubles (eUCCGSD) ansatz'
 
-    def generate_coeff(self, profile, coeff=0.0):
-        'Generate UCCGSD coefficients'
-        no = profile.num_orb
-        count = 0
-        for _ in combinations(range(no), 2):
-            count += 2
-
-        for _ in combinations(range(no), 4):
-            count += 2
-
-        for i, j in product(range(no), repeat = 2):
-            for _ in product(range(i+1, no), range(j+1, no)):
-                count += 1
-
-        for _ in combinations(range(no), 2):
-            count += 1
-
-        return [coeff] * count
-
-    def mapping(self, profile, coeff):
-        'Generate UCCGSD ansatz Pauli strings'
-        fermionic_op = FermionicOp()
-        no = profile.num_orb
-        value = iter(coeff)
+    def _doubles_idx(self, ne, no):
+        yield from super()._doubles_idx(ne, no)
         for i, j in combinations(range(no), 2):
-            fermionic_op += singles(next(value), i, j)
+            yield j, i, i, j
 
-        for i, j, k, l in combinations(range(no), 4):
-            fermionic_op += doubles(next(value), i, j, k, l)
-            fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
 
-        for i, j in product(range(no), repeat = 2):
-            for k, l in product(range(i+1, no), range(j+1, no)):
-                fermionic_op += doubles(next(value), i, j+no, k, l+no)
-
-        for i, j in combinations(range(no), 2):
-            fermionic_op += doubles(next(value), i, j+no, i+no, j)
-
-        return fermionic_op.jordan_wigner
-
-class kUpCCGSD(UCCSD):
+class kUpCCGSD(UCCGSD):
     'k-paired Unitary Coupled Cluster Generalized Singles and Doubles (kUpCCGSD) ansatz'
     def __init__(self, k=1):
         self.k = k
 
-    def generate_coeff(self, profile, coeff=0.0):
-        'Generate UCCGSD coefficients'
-        no = profile.num_orb
-        count = 0
-
+    def _singles_idx(self, ne, no):
+        'Generate singles indices'
         for _ in range(self.k):
-            for _ in combinations(range(no), 2):
-                count += 3
+            yield from super()._singles_idx(ne, no)
 
-            for _ in combinations(range(no), 4):
-                count += 2
-
-            for i, j in product(range(no), repeat = 2):
-                for _ in product(range(i+1, no), range(j+1, no)):
-                    count += 1
-
-        return [coeff] * count
-
-    def mapping(self, profile, coeff):
-        'Generate UCCGSD ansatz Pauli strings'
-        fermionic_op = FermionicOp()
-        no = profile.num_orb
-        value = iter(coeff)
+    def _doubles_idx(self, ne, no):
+        'Generate doubles indices'
         for _ in range(self.k):
-            for i, j in combinations(range(no), 2):
-                fermionic_op += singles(next(value), i, j)
-
-            for i, j, k, l in combinations(range(no), 4):
-                fermionic_op += doubles(next(value), i, j, k, l)
-                fermionic_op += doubles(next(value), i+no, j+no, k+no, l+no)
-
-            for i, j in product(range(no), repeat = 2):
-                for k, l in product(range(i+1, no), range(j+1, no)):
-                    fermionic_op += doubles(next(value), i, j+no, k, l+no)
-
-            for i, j in combinations(range(no), 2):
-                fermionic_op += doubles(next(value), i, i+no, j, j+no)
-
-        return fermionic_op.jordan_wigner
+            yield from super()._doubles_idx(ne, no)

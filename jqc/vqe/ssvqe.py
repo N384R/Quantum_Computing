@@ -1,8 +1,9 @@
 import datetime
+from itertools import combinations
 from qiskit import QuantumCircuit
 from jqc.vqe.vqe import VQE
 from jqc.ansatz import Ansatz
-from jqc.ansatz import eUCCSD
+from jqc.ansatz import fUCCSD
 from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profiles
@@ -13,7 +14,7 @@ class SSVQE(VQE):
     '''
     verbose_print = VQE.verbose_print
 
-    def __init__(self, mol, ansatz: Ansatz = eUCCSD(), simulator: Simulator=StateVector()):
+    def __init__(self, mol, ansatz: Ansatz = fUCCSD(), simulator: Simulator=StateVector()):
         super().__init__(mol, ansatz = ansatz, simulator = simulator)
         self.profiles = None  #type: ignore
         self.koopmans = False
@@ -66,18 +67,19 @@ class SSVQE(VQE):
         ne = self.profile.num_elec
         no = self.profile.num_orb
         ni = ne//2 - occ
-        nf = ni + vir + 1
+        nf = ne//2 + vir
         orb_indices = list(range(no * 2))
         alpha = orb_indices[ni:nf]
         beta = orb_indices[no + ni:no + nf]
-        return [(i, j) for i in alpha for j in beta]
+        idx = alpha + beta
+        configuration = [idx for i in range(ni) for idx in (i, i + no)]
+        return [configuration + list(k) for k in combinations(idx, occ * 2)]
 
     def circuit(self, coeff):
         'Builds the quantum circuit for the calculation.'
         qc = QuantumCircuit(self.profile.num_orb*2, self.profile.num_orb*2)
-        i, j = self._configuration()[self.profile.state]
-        self.profile.configuration = (i, j)  #type: ignore
-        qc.x([i, j])
+        for idx in self._configuration()[self.profile.state]:
+            qc.x(idx)
         self.ansatz.ansatz(qc, self.profile, coeff)
         return qc
 
@@ -166,26 +168,26 @@ class SSVQE(VQE):
                   for state2 in self.profiles]
         return matrix
 
-def superposition(state1, state2, mode):
-    'Creates a superposition of two states.'
-    no = state1.num_orb
-    c1 = state1.configuration
-    c2 = state2.configuration
-    qc = QuantumCircuit(no*2, no*2)
-    if c1[0] != c2[0]:
-        qc.h(c1[0])
-        if mode == 'imag':
-            qc.sdg(c1[0])
-        qc.cx(c1[0], c2[0])
-        qc.x(c2[0])
-    else:
-        qc.x(c1[0])
-    if c1[1] != c2[1]:
-        qc.h(c1[1])
-        if mode == 'imag':
-            qc.sdg(c1[1])
-        qc.cx(c1[1], c2[1])
-        qc.x(c2[1])
-    else:
-        qc.x(c1[1])
-    return qc
+# def superposition(state1, state2, mode):
+#     'Creates a superposition of two states.'
+#     no = state1.num_orb
+#     c1 = state1.configuration
+#     c2 = state2.configuration
+#     qc = QuantumCircuit(no*2, no*2)
+#     if c1[0] != c2[0]:
+#         qc.h(c1[0])
+#         if mode == 'imag':
+#             qc.sdg(c1[0])
+#         qc.cx(c1[0], c2[0])
+#         qc.x(c2[0])
+#     else:
+#         qc.x(c1[0])
+#     if c1[1] != c2[1]:
+#         qc.h(c1[1])
+#         if mode == 'imag':
+#             qc.sdg(c1[1])
+#         qc.cx(c1[1], c2[1])
+#         qc.x(c2[1])
+#     else:
+#         qc.x(c1[1])
+#     return qc

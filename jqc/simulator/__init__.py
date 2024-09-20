@@ -8,7 +8,15 @@ from .state_vector import StateVector
 
 class Simulator(Protocol):
     'Protocol for running simulators.'
-    def measure(self, qc: QuantumCircuit, operator, parallel: bool) -> float:
+
+    @property
+    def parallel(self) -> bool:
+        'The parallel flag for the calculation.'
+        ...
+    @parallel.setter
+    def parallel(self, value: bool):
+        ...
+    def measure(self, qc1, operator, qc2 = None) -> float:
         'Measure the expectation value of a Hamiltonian'
         ...
     def get_overlap(self, state1: Profile, state2: Profile) -> float:

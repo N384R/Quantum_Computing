@@ -41,25 +41,7 @@ class VQE:
         self.simulator = simulator
         self.profile: Profile = Profile(mol)
         self.hamiltonian = hamiltonian(self.profile)
-        self._config = {'iteration': 0, 'optimizer': 'powell', 'parallel': False, 'verbose': True}
-
-    @property
-    def ansatz(self):
-        'The ansatz to be used for the calculation.'
-        return self.__ansatz
-
-    @ansatz.setter
-    def ansatz(self, ansatz: Ansatz):
-        self.__ansatz = ansatz
-
-    @property
-    def simulator(self):
-        'The simulator to be used for the calculation.'
-        return self.__simulator
-
-    @simulator.setter
-    def simulator(self, simulator: Simulator):
-        self.__simulator = simulator
+        self._config = {'iteration': 0, 'optimizer': 'powell', 'verbose': True}
 
     @property
     def optimizer(self) -> str:
@@ -73,11 +55,11 @@ class VQE:
     @property
     def parallel(self) -> bool:
         'The parallel flag for the calculation.'
-        return self._config['parallel']
+        return self.simulator.parallel
 
     @parallel.setter
     def parallel(self, parallel: bool):
-        self._config['parallel'] = parallel
+        self.simulator.parallel = parallel
 
     @property
     def verbose(self) -> bool:
@@ -130,7 +112,7 @@ class VQE:
 
     def _batch(self, coeff):
         qc = self.circuit(coeff)
-        energy = self.simulator.measure(qc, self.hamiltonian, self.parallel)
+        energy = self.simulator.measure(qc, self.hamiltonian)
         self.profile.energy_elec = energy
         self.profile.coeff = coeff
         self.profile.circuit = qc
@@ -144,13 +126,14 @@ class VQE:
                 operator = operator_func(self.profile)
             else:
                 raise ValueError('Operator must be a callable function.')
-            results[operator_func.__name__] = self._solve(operator)
+            qc = self.profile.circuit
+            results[operator_func.__name__] = self._solve(qc, operator)
         return results
 
-    def _solve(self, operator) -> float | list:
+    def _solve(self, qc1, operator, qc2=None) -> float | list:
         if isinstance(operator, list):
-            return [self._solve(op) for op in operator]
-        return self.simulator.measure(self.profile.circuit, operator, self.parallel)
+            return [self._solve(qc1, op, qc2) for op in operator]
+        return self.simulator.measure(qc1, operator, qc2)
 
     @staticmethod
     def general_output(func):

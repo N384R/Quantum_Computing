@@ -35,5 +35,5 @@ def total_spin(profile):
     sp_op = s_plus(profile)
     sm_op = s_minus(profile)
 
-    s2_op = sz_op * sz_op + (sp_op * sm_op + sm_op * sp_op) / 2
+    s2_op = ((sp_op * sm_op) + (sm_op * sp_op)) / 2 + (sz_op * sz_op)
     return s2_op.jordan_wigner
