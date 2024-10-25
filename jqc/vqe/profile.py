@@ -110,6 +110,8 @@ class Profile:
     def save(self, filename):
         'Saves the profile information to a JSON file.'
         def convert(o):
+            if isinstance(o, np.integer):
+                return int(o)
             if isinstance(o, np.ndarray):
                 return o.tolist()
             if isinstance(o, QuantumCircuit):
