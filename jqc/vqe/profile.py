@@ -4,10 +4,12 @@ import numpy as np
 from qiskit import QuantumCircuit
 from jqc.measure.hamiltonian import pyscf_luncher
 
+
 class Profile:
     '''
     Class for storing the profile information of a molecule.
     '''
+
     def __init__(self, mol):
         self.info = pyscf_luncher(mol)
 
@@ -126,10 +128,12 @@ class Profile:
         state_number = self.state if self.state else 0
         return f'{mult}_{state_number}'
 
+
 class Profiles:
     '''
     Class for storing the profile information of a molecule.
     '''
+
     def __init__(self, p, nstates=1):
         self.profiles = self._generate_profiles(p, nstates)
 

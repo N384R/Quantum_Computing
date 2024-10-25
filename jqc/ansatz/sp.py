@@ -2,12 +2,15 @@ import numpy as np
 import scipy.optimize as opt
 from qiskit import QuantumCircuit
 
+
 def boundary(coeff):
     'Boundary condition'
     return [(-2*np.pi, 2*np.pi)] * len(coeff)
 
+
 class SP:
     'Symmetry Preserving (SP) ansatz'
+
     def __init__(self, depth=1):
         self.depth = depth
 
@@ -48,8 +51,10 @@ class SP:
             for i in range(1, no*2-1, 2):
                 self.Agate(qc, next(value), next(value), i)
 
+
 class RSP:
     'Real-valued Symmetry Preserving (RSP) ansatz'
+
     def __init__(self, depth=1):
         self.depth = depth
 
@@ -97,8 +102,10 @@ class RSP:
         for i in range(0, no*2-1, 2):
             self.gate(qc, next(value), i)
 
+
 class OSP:
     'One parameter Symmetry Preserving (OSP) ansatz'
+
     def __init__(self, depth=1):
         self.depth = depth
 

@@ -4,6 +4,7 @@ from numba import jit
 from qiskit.quantum_info import Statevector
 from jqc.mapper.pauli import Pauli
 
+
 class StateVector:
     'Class for running State Vector simulator.'
 
@@ -14,10 +15,12 @@ class StateVector:
         'Measure the expectation value of an Operator'
         sv1 = get_statevector(qc1)
         sv2 = get_statevector(qc2) if qc2 else sv1
-        tasks = ((sv1, sv2, p_string, values) for p_string, values in operator.items())
+        tasks = ((sv1, sv2, p_string, values)
+                 for p_string, values in operator.items())
         if self.parallel:
-            quantities = Parallel(n_jobs=-1)(delayed(self.single_measure)(task) for task in tasks)
-            quantity = sum(quantities) # type: ignore
+            quantities = Parallel(
+                n_jobs=-1)(delayed(self.single_measure)(task) for task in tasks)
+            quantity = sum(quantities)  # type: ignore
         else:
             quantity = sum(self.single_measure(task) for task in tasks)
         return quantity
@@ -40,12 +43,14 @@ class StateVector:
         overlap_sq = abs(np.dot(statevector1.conj().T, statevector2))**2
         return overlap_sq
 
+
 def get_statevector(qc) -> np.ndarray:
     'Get the state vector of a quantum circuit.'
     statevector = Statevector(qc).data
     real_part = np.where(abs(statevector.real) < 1e-12, 0, statevector.real)
     imag_part = np.where(abs(statevector.imag) < 1e-12, 0, statevector.imag)
     return real_part + 1j * imag_part
+
 
 def pauli_to_int(pauli_string):
     'Convert a Pauli string to an integer.'
@@ -60,6 +65,7 @@ def pauli_to_int(pauli_string):
         elif p == Pauli.Z:
             result[i] = 3
     return result
+
 
 @jit(nopython=True)
 def mult_operator(statevector, operator):

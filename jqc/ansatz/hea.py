@@ -9,9 +9,11 @@ ansatz: Generates HEA ansatz circuit.
 import numpy as np
 import scipy.optimize as opt
 
+
 def boundary(coeff):
     'Boundary condition'
     return [(-2*np.pi, 2*np.pi)] * len(coeff)
+
 
 class HEA:
     'Hardware Efficient Ansatz (HEA)'

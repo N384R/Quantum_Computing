@@ -22,6 +22,7 @@ from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profile
 
+
 class VQE:
     '''
     Variational Quantum Eigensolver (VQE).
@@ -98,6 +99,7 @@ class VQE:
     @staticmethod
     def batch_output(func):
         'Decorator for the batch output.'
+
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
             print(f"Iteration: {self.iteration()}, " +
@@ -138,6 +140,7 @@ class VQE:
     @staticmethod
     def general_output(func):
         'Decorator for the normal output.'
+
         def wrapper(self, *args, **kwargs):
             print(f'\nStarting {self.__class__.__name__} Calculation\n')
             print(f'Ansatz: {self.ansatz.__class__.__name__}')
@@ -159,7 +162,8 @@ class VQE:
 
     def _run(self):
         coeff = self.ansatz.generate_coeff(self.profile)
-        optimized = self.ansatz.call_optimizer(self.batch, coeff, self.optimizer)
+        optimized = self.ansatz.call_optimizer(
+            self.batch, coeff, self.optimizer)
         self.profile.energy_elec = float(optimized.fun)
         self.profile.coeff = optimized.x
         self.profile.circuit = self.circuit(optimized.x)

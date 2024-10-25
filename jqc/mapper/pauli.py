@@ -6,6 +6,7 @@ from functools import reduce
 from itertools import chain
 import operator
 
+
 class Pauli:
     'A class to represent a Pauli operator.'
 
@@ -71,10 +72,12 @@ class Pauli:
     def __repr__(self):
         return self.symbol
 
+
 Pauli.X = Pauli('X')
 Pauli.Y = Pauli('Y')
 Pauli.Z = Pauli('Z')
 Pauli.I = Pauli('I')
+
 
 class PauliOp:
     'A class to represent a string of Pauli operators.'
@@ -148,25 +151,28 @@ class PauliOp:
             return '-' if v < 0 else '+'
         result = ''
         for pauli, val in self.objects.items():
-            ops  = ''.join(str(op) for op in pauli)
+            ops = ''.join(str(op) for op in pauli)
             val_str = f'{sgn(val.real)} {abs(val.real):.06f} ' + \
                       f'{sgn(val.imag)} {abs(val.imag):.06f} i'
             result += f'+ ({val_str}) {ops}\n'
         return result
+
 
 def get_op(obj, val) -> dict:
     'Return the operators in a string.'
     obj = tuple(Pauli(v) for v in obj.split())
     return {obj: val}
 
+
 def arrange_ops(obj, val):
     'Return the reduced operators in a string.'
     *sgns, ops = zip(*[op.attribute for op in obj])
-    sgns_flat  = list(chain(*sgns))
-    product    = reduce(operator.mul, sgns_flat)
-    ops_arr    = tuple(Pauli(op) for op in ops)
-    val_arr    = val * product
+    sgns_flat = list(chain(*sgns))
+    product = reduce(operator.mul, sgns_flat)
+    ops_arr = tuple(Pauli(op) for op in ops)
+    val_arr = val * product
     yield ops_arr, val_arr
+
 
 def distribute_ops(obj1, obj2):
     'Return the product of two Pauli strings.'
@@ -175,9 +181,11 @@ def distribute_ops(obj1, obj2):
             op = pauli_mult(key1, key2)
             yield from arrange_ops(op, val)
 
+
 def pauli_mult(obj1, obj2):
     'Return the product of two Pauli operators.'
     return tuple(op1 * op2 for op1, op2 in zip(obj1, obj2))
+
 
 if __name__ == "__main__":
     pauli1 = Pauli('iX')

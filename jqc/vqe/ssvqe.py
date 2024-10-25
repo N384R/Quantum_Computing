@@ -8,15 +8,16 @@ from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profiles
 
+
 class SSVQE(VQE):
     '''
     Subspace-Search Variational Quantum Eigensolver (SSVQE).
     '''
     verbose_print = VQE.verbose_print
 
-    def __init__(self, mol, ansatz: Ansatz = fUCCSD(), simulator: Simulator=StateVector()):
-        super().__init__(mol, ansatz = ansatz, simulator = simulator)
-        self.profiles = None  #type: ignore
+    def __init__(self, mol, ansatz: Ansatz = fUCCSD(), simulator: Simulator = StateVector()):
+        super().__init__(mol, ansatz=ansatz, simulator=simulator)
+        self.profiles = None  # type: ignore
         self.koopmans = False
         self.active_space = [1, 1]
 
@@ -37,7 +38,8 @@ class SSVQE(VQE):
             no = self.profile.num_orb
             ne = self.profile.num_elec
             if ((k[1] > no - ne//2) or (k[0] > ne//2)):
-                raise ValueError('Invalid active space. Please check the basis.')
+                raise ValueError(
+                    'Invalid active space. Please check the basis.')
             self._config['nstates'] = len(self._configuration())
         return self._config['nstates']
 
@@ -54,7 +56,8 @@ class SSVQE(VQE):
     def weights(self):
         'The weights for the calculation.'
         if 'weights' not in self._config:
-            self._config['weights'] = [self.nstates * 10] + list(range(1, self.nstates))[::-1]
+            self._config['weights'] = [self.nstates * 10] + \
+                list(range(1, self.nstates))[::-1]
         return self._config['weights']
 
     @weights.setter
@@ -86,9 +89,11 @@ class SSVQE(VQE):
     @staticmethod
     def state_output(func):
         'Decorator for the batch output.'
+
         def wrapper(self, *args, **kwargs):
             energy = func(self, *args, **kwargs)
-            print(f"State {self.profile.state}: {self.profile.energy_total:12.09f}")
+            print(
+                f"State {self.profile.state}: {self.profile.energy_total:12.09f}")
             return energy
         return wrapper
 
@@ -100,6 +105,7 @@ class SSVQE(VQE):
     @staticmethod
     def batch_output(func):
         'Decorator for the batch output.'
+
         def wrapper(self, *args, **kwargs):
             print(f"Iteration: {self.iteration()}")
             energy = func(self, *args, **kwargs)
@@ -120,6 +126,7 @@ class SSVQE(VQE):
     @staticmethod
     def general_output(func):
         'Decorator for the normal output.'
+
         def wrapper(self, *args, **kwargs):
             print(f'\nStarting {self.__class__.__name__} Calculation\n')
             print(f'Ansatz: {self.ansatz.__class__.__name__}')
@@ -155,9 +162,11 @@ class SSVQE(VQE):
             def measure_value(mode):
                 qc = superposition(state1, state2, mode)
                 self.ansatz.ansatz(qc, state1, state1.coeff)
-                result  = self.simulator.measure(qc, operator, self.parallel)
-                result -= self.simulator.measure(state1.circuit, operator, self.parallel) / 2
-                result -= self.simulator.measure(state2.circuit, operator, self.parallel) / 2
+                result = self.simulator.measure(qc, operator, self.parallel)
+                result -= self.simulator.measure(state1.circuit,
+                                                 operator, self.parallel) / 2
+                result -= self.simulator.measure(state2.circuit,
+                                                 operator, self.parallel) / 2
                 return result
             real = measure_value('real')
             imag = measure_value('imag')

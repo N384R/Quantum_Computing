@@ -11,19 +11,23 @@ import numpy as np
 import scipy.optimize as opt
 from jqc.mapper.fermion import FermionicOp
 
+
 def singles(val, i, j):
     'Singles operator'
-    return FermionicOp(val, f'{j}^ {i}') - \
-           FermionicOp(val, f'{i}^ {j}')
+    return (FermionicOp(val, f'{j}^ {i}') -
+            FermionicOp(val, f'{i}^ {j}'))
+
 
 def doubles(val, i, j, k, l):
     'Doubles operator'
-    return FermionicOp(val, f'{k}^ {l}^ {j} {i}') - \
-           FermionicOp(val, f'{i}^ {j}^ {l} {k}')
+    return (FermionicOp(val, f'{k}^ {l}^ {j} {i}') -
+            FermionicOp(val, f'{i}^ {j}^ {l} {k}'))
+
 
 def boundary(coeff):
     'Boundary condition'
     return [(-2*np.pi, 2*np.pi)] * len(coeff)
+
 
 class UCCSD:
     'Unitary Coupled Cluster Singles and Doubles (UCCSD) ansatz'
@@ -57,8 +61,8 @@ class UCCSD:
 
     def _doubles_idx(self, ne, no):
         'Generate doubles indices'
-        for i, j in product(range(ne), repeat = 2):
-            for k, l in product(range(ne, no), repeat = 2):
+        for i, j in product(range(ne), repeat=2):
+            for k, l in product(range(ne, no), repeat=2):
                 yield i, j+no, k, l+no
 
     def mapping(self, profile, coeff):
@@ -102,6 +106,7 @@ class UCCSD:
                     qc.h(idx)
                     qc.s(idx)
 
+
 class fUCCSD(UCCSD):
     ' spin-flip Unitary Coupled Cluster Singles and Doubles (fUCCSD) ansatz'
 
@@ -118,6 +123,7 @@ class fUCCSD(UCCSD):
         for i, j in combinations(range(no), 2):
             yield i, j+no, i+no, j
 
+
 class UCCGSD(UCCSD):
     'Unitary Coupled Cluster Generalized Singles and Doubles (UCCGSD) ansatz'
 
@@ -133,9 +139,10 @@ class UCCGSD(UCCSD):
             yield i, j, k, l
             yield i+no, j+no, k+no, l+no
 
-        for i, j in product(range(no), repeat = 2):
+        for i, j in product(range(no), repeat=2):
             for k, l in product(range(i+1, no), range(j+1, no)):
                 yield i, j+no, k, l+no
+
 
 class eUCCGSD(UCCGSD):
     'entangled Unitary Coupled Cluster Generalized Singles and Doubles (eUCCGSD) ansatz'
@@ -148,6 +155,7 @@ class eUCCGSD(UCCGSD):
 
 class kUpCCGSD(UCCGSD):
     'k-paired Unitary Coupled Cluster Generalized Singles and Doubles (kUpCCGSD) ansatz'
+
     def __init__(self, k=1):
         self.k = k
 

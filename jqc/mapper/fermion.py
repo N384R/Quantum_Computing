@@ -5,8 +5,10 @@ This module defines the Fermion class and FermionicOp class.
 from itertools import pairwise
 from .pauli import PauliOp
 
+
 class Fermion:
     'Class for Fermionic operator.'
+
     def __init__(self, fermion):
         self.fermion = fermion
 
@@ -38,8 +40,10 @@ class Fermion:
         line = "a" + notation
         return line
 
+
 class FermionicOp:
     'Class for string of Fermionic operators.'
+
     def __init__(self, *args):
         if not args:
             self._objects = {}
@@ -111,16 +115,19 @@ class FermionicOp:
             result += f'{sign} ({abs(value):.06f}) {ops}\n'
         return result
 
+
 def distribute_ops(obj1, obj2):
     'Distribute the operators in a string.'
     for op1, val1 in obj1.items():
         for op2, val2 in obj2.items():
             yield from fermionic_sort(tuple([*op1, *op2]), val1 * val2)
 
+
 def get_op(obj, val) -> dict:
     'Return the operators in a string.'
     obj = tuple(Fermion(v) for v in obj.split())
     return dict(fermionic_sort(obj, val))
+
 
 def fermionic_sort(obj, val):
     'Sort the operators in a string.'
@@ -128,6 +135,7 @@ def fermionic_sort(obj, val):
     for op, v in dirac_sort(obj, val):
         if abs(v) > 1e-12:
             yield op, v
+
 
 def num_sort(obj, val):
     'Sort the operators by the number of the fermion.'
@@ -141,6 +149,7 @@ def num_sort(obj, val):
         return num_sort(tuple(obj_list), val)
     return tuple(obj_list), val
 
+
 def mode(a, b):
     'Return the mode of sorting.'
     if a.type == b.type:
@@ -149,6 +158,7 @@ def mode(a, b):
     if (a.type, b.type) == ('annihilation', 'creation'):
         return 'dirac'
     return 'keep'
+
 
 def dirac_sort(obj, val):
     'Sort the operators by the commutator relation.'
@@ -163,10 +173,12 @@ def dirac_sort(obj, val):
             return
     yield num_sort(tuple(obj_list), val)
 
+
 def jordan_wigner(fermionic_op) -> PauliOp:
     'Convert a Fermionic operator to a Pauli operator.'
     result = PauliOp()
-    max_len = max((abs(fo.num) + 1 for op in fermionic_op for fo in op), default=0)
+    max_len = max(
+        (abs(fo.num) + 1 for op in fermionic_op for fo in op), default=0)
     for op, val in fermionic_op.items():
         pstr = PauliOp(val, ' '.join(['I'] * max_len))
         if not op:
@@ -176,14 +188,15 @@ def jordan_wigner(fermionic_op) -> PauliOp:
             z = ['Z'] * abs(fo.num)
             y = ['iY'] if fo.type == 'creation' else ['-iY']
             i = ['I'] * (max_len - abs(fo.num) - 1)
-            fo2po  = PauliOp(val, ' '.join(z + ['X'] + i)) + \
-                     PauliOp(val, ' '.join(z +   y   + i))
+            fo2po = PauliOp(val, ' '.join(z + ['X'] + i)) + \
+                PauliOp(val, ' '.join(z + y + i))
             pstr *= fo2po
         result += pstr / (2 ** (len(op)))
     for op, val in result.objects.items():
         if sum(1 for po in op if po.symbol == 'Z') % 2:
             result.objects[op] *= -1
     return result
+
 
 if __name__ == "__main__":
     fo1 = FermionicOp(1.00, '1 2 2^ 1^')

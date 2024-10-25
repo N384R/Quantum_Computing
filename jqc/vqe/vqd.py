@@ -6,6 +6,7 @@ from jqc.simulator import Simulator
 from jqc.simulator import StateVector
 from jqc.vqe.profile import Profiles
 
+
 class VQD(VQE):
     '''
     Variational Quantum Deflation (VQD).
@@ -22,8 +23,8 @@ class VQD(VQE):
     verbose_print = VQE.verbose_print
 
     def __init__(self, mol, ansatz: Ansatz = fUCCSD(), simulator: Simulator = StateVector()):
-        super().__init__(mol, ansatz = ansatz, simulator = simulator)
-        self.profiles = None  #type: ignore
+        super().__init__(mol, ansatz=ansatz, simulator=simulator)
+        self.profiles = None  # type: ignore
         self.nstates = 2
         self.beta = 3.0
 
@@ -58,6 +59,7 @@ class VQD(VQE):
     @staticmethod
     def normal_output(func):
         'Decorator for the normal output.'
+
         def wrapper(self, *args, **kwargs):
             print(f'State {self.profile.state}:')
             result = func(self, *args, **kwargs)
@@ -73,6 +75,7 @@ class VQD(VQE):
     @staticmethod
     def general_output(func):
         'Decorator for the normal output.'
+
         def wrapper(self, *args, **kwargs):
             print(f'\nStarting {self.__class__.__name__} Calculation\n')
             print(f'Ansatz: {self.ansatz.__class__.__name__}')
