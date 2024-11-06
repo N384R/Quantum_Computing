@@ -33,7 +33,7 @@ cd Quantum_Computing/examples
 ```
 \
 Have fun!
-\
+
 
 Information
 -----------
