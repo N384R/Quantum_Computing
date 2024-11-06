@@ -1,5 +1,36 @@
 ## Python Quantum Circuit Calculation Library.
 
+Installation
+------------
+```bash
+wget https://github.com/N384R/Quantum_Computing
+```
+
+Recommend to create conda virtual environment
+```bash
+conda create --name jqc python==3.11.7
+```
+
+Activate conda environment
+```bash
+conda activate jqc
+```
+
+Requirements can be installed using pip:
+```bash
+pip install -r requirements.txt
+```
+
+Example notebooks are inside Quantum_Computing/examples
+```bash
+cd Quantum_Computing/examples
+```
+
+Have fun!
+
+Information
+-----------
+
 Can do:
 
     1. Variational Quantum Eigensolver (VQE) (2024/05)
@@ -25,9 +56,11 @@ Possible ansatz:
 
 Possible property analysis:
 
-    (scheduled)
     1. Multiplicity
-    2. Transition Dipole Moment
+    2. Dipole Moment
+
+    (scheduled)
+    3. Transition dipole moment
 
 What is New:
 
@@ -37,5 +70,5 @@ What is New:
 
 Have to do:
 
-    1. Rebuild the Jordan Wigner Mapper
-    2. 
+    1. 
+    2.
