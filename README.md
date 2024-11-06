@@ -7,34 +7,33 @@ Get the full materials by:
 ```bash
 wget https://github.com/N384R/Quantum_Computing
 ```
-//
+\
 Recommend to create conda virtual environment
 
 ```bash
 conda create --name jqc python==3.11.7
 ```
-
+\
 Activate conda environment
 
 ```bash
 conda activate jqc
 ```
-
+\
 Requirements can be installed using pip:
 
 ```bash
 pip install -r requirements.txt
 ```
-
+\
 Example notebooks are inside Quantum_Computing/examples
 
 ```bash
 cd Quantum_Computing/examples
 ```
-
+\
 Have fun!
-
-
+\
 
 Information
 -----------
