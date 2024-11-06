@@ -23,13 +23,14 @@ conda activate jqc
 Requirements can be installed using pip:
 
 ```bash
+cd Quantum_Computing
 pip install -r requirements.txt
 ```
 \
 Example notebooks are inside Quantum_Computing/examples
 
 ```bash
-cd Quantum_Computing/examples
+cd examples
 ```
 \
 Have fun!
