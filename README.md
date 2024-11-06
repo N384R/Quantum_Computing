@@ -7,7 +7,7 @@ Get the full materials by:
 ```bash
 wget https://github.com/N384R/Quantum_Computing
 ```
-
+//
 Recommend to create conda virtual environment
 
 ```bash
