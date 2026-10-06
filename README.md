@@ -80,3 +80,8 @@ Have to do:
 
     1. 
     2.
+
+License
+-------
+
+This project is licensed under the [MIT License](LICENSE).
